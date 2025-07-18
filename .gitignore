@@ -1,0 +1,71 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.pidb
+*.svclog
+*.pdb
+*.cache
+*.log
+*.vspscc
+*.vssscc
+*.dbmdl
+*.bak
+*.backup
+*.publish.xml
+*.dbmdl
+*.jfm
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+TestResult*/
+*.ncrunch*
+*.ndoc*
+*.nupkg
+*.snk
+*.psess
+*.vsp
+*.vsix
+*.docstates
+*.vs/
+/.vs/
+/.idea/
+*.sln.iml
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+# Azure Functions local settings file
+local.settings.json
+# Rider
+.idea/
+*.sln.iml
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+# Mono Auto Generated Files
+mono_crash.*
+# Windows image file caches
+Thumbs.db
+# Folder config file
+Desktop.ini
+# VS Code
+.vscode/
+# DotCover
+*.dotCover
+# NCrunch
+*.ncrunch*
+_NCrunch_*/
+# DocFx build output
+_*/_site/
+# StyleCop
+StyleCopReport.xml
+# Files built by Visual Studio
+*.Build.Caches/
+
+docs/*.vpp.*

@@ -1,6 +1,6 @@
 {
-  "name": "SSBJr.ndb.integration.blazor",
-  "short_name": "SSBJr.ndb.integration.blazor",
+  "name": "SSBJr.ndb.integration.Blazor",
+  "short_name": "SSBJr.ndb.integration.Blazor",
   "id": "./",
   "start_url": "./",
   "display": "standalone",

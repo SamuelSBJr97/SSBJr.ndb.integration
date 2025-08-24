@@ -1,14 +1,14 @@
-# UnifyDB: Provisionamento Unificado de Bancos de Dados
+# SSBJr.ndb.Integration: Provisionamento Unificado de Bancos de Dados
 
 [![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-blueviolet.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Status](https://img.shields.io/badge/status-Em%20Desenvolvimento-orange.svg)]()
 
-**UnifyDB** é uma plataforma de engenharia de software que simplifica e automatiza o provisionamento de bancos de dados em múltiplos provedores de nuvem através de uma interface gráfica única e intuitiva.
+**SSBJr.ndb.Integration** é uma plataforma de engenharia de software que simplifica e automatiza o provisionamento de bancos de dados em múltiplos provedores de nuvem através de uma interface gráfica única e intuitiva.
 
 ## Visão Geral
 
-A complexidade de criar, configurar e gerenciar bancos de dados em diferentes ambientes de nuvem (como AWS e Azure) e com diferentes tecnologias (SQL e NoSQL) pode ser um grande obstáculo para equipes de desenvolvimento. O UnifyDB resolve esse problema ao fornecer um ponto central de controle, abstraindo a complexidade das APIs de cada provedor e oferecendo um fluxo de trabalho padronizado.
+A complexidade de criar, configurar e gerenciar bancos de dados em diferentes ambientes de nuvem (como AWS e Azure) e com diferentes tecnologias (SQL e NoSQL) pode ser um grande obstáculo para equipes de desenvolvimento. O SSBJr.ndb.Integration resolve esse problema ao fornecer um ponto central de controle, abstraindo a complexidade das APIs de cada provedor e oferecendo um fluxo de trabalho padronizado.
 
 ## ✨ Funcionalidades e Requisitos
 
@@ -61,7 +61,7 @@ A complexidade de criar, configurar e gerenciar bancos de dados em diferentes am
 
 ## 🏛️ Arquitetura
 
-O UnifyDB é projetado como um sistema distribuído, orquestrado pelo .NET Aspire.
+O SSBJr.ndb.Integration é projetado como um sistema distribuído, orquestrado pelo .NET Aspire.
 
 ```mermaid
 graph TD
@@ -69,7 +69,7 @@ graph TD
         A[Navegador]
     end
 
-    subgraph "Aplicação UnifyDB"
+    subgraph "Aplicação SSBJr.ndb.Integration"
         B[WebApp - Blazor UI]
         C[Backend API - .NET]
         D[Orquestrador - .NET Aspire]

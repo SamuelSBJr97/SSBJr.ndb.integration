@@ -69,3 +69,4 @@ StyleCopReport.xml
 *.Build.Caches/
 
 docs/*.vpp.*
+/src/ssbjr.ndb.integration.react/package-lock.json

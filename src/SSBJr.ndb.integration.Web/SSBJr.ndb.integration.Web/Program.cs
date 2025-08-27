@@ -1,5 +1,5 @@
-using SSBJr.ndb.integration.Web.Web;
-using SSBJr.ndb.integration.Web.Web.Components;
+using SSBJr.ndb.integration.Web;
+using SSBJr.ndb.integration.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -1,0 +1,14 @@
+version: '3.3.4'
+generator-name: typescript-axios
+input-spec: http://localhost:8080/swagger/v1/swagger.json
+output-dir: src/api/generated
+additional-properties:
+  useSingleRequestParameter: true
+  withInterfaces: true
+  withSeparateModelsAndApi: true
+  modelPropertyNaming: camelCase
+  enumPropertyNaming: UPPERCASE
+  supportsES6: true
+  withNodeImports: true
+  npmName: "@ssbjr/ndb-integration-client"
+  npmVersion: "1.0.0"

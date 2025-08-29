@@ -1,12 +1,13 @@
 using SSBJr.ndb.integration.Web.Models;
-using System.Collections.Concurrent;
+using SSBJr.ndb.integration.Web.Data;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace SSBJr.ndb.integration.Web.Services;
 
 public class ApiInterfaceService : IApiInterfaceService
 {
-    private readonly ConcurrentDictionary<Guid, ApiInterface> _apis = new();
+    private readonly ApiManagerDbContext _context;
     private readonly IDockerContainerService _containerService;
     private readonly IInfrastructureService _infrastructureService;
     private readonly IAuditService _auditService;
@@ -14,20 +15,19 @@ public class ApiInterfaceService : IApiInterfaceService
     private readonly IConfiguration _configuration;
 
     public ApiInterfaceService(
+        ApiManagerDbContext context,
         IDockerContainerService containerService,
         IInfrastructureService infrastructureService,
         IAuditService auditService,
         ILogger<ApiInterfaceService> logger,
         IConfiguration configuration)
     {
+        _context = context;
         _containerService = containerService;
         _infrastructureService = infrastructureService;
         _auditService = auditService;
         _logger = logger;
         _configuration = configuration;
-        
-        // Seed with example data
-        SeedExampleData();
     }
 
     public async Task<ApiInterface> CreateAsync(ApiInterfaceCreateRequest request, string userId)
@@ -52,10 +52,11 @@ public class ApiInterfaceService : IApiInterfaceService
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = userId,
                 Tags = request.Tags,
-                Metadata = request.Metadata
+                Metadata = request.Metadata ?? new Dictionary<string, object>()
             };
 
-            _apis[apiInterface.Id] = apiInterface;
+            _context.ApiInterfaces.Add(apiInterface);
+            await _context.SaveChangesAsync();
 
             await _auditService.LogAsync("API_CREATED", $"API Interface '{request.Name}' created", userId, apiInterface.Id.ToString());
 
@@ -74,31 +75,32 @@ public class ApiInterfaceService : IApiInterfaceService
 
     public async Task<ApiInterface?> GetByIdAsync(Guid id)
     {
-        return await Task.FromResult(_apis.TryGetValue(id, out var api) ? api : null);
+        return await _context.ApiInterfaces.FirstOrDefaultAsync(a => a.Id == id);
     }
 
     public async Task<IEnumerable<ApiInterface>> GetAllAsync(int page = 1, int pageSize = 10, string? search = null)
     {
-        var query = _apis.Values.AsEnumerable();
+        var query = _context.ApiInterfaces.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             query = query.Where(api => 
-                api.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                api.Description.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                api.Tags.Any(tag => tag.Contains(search, StringComparison.OrdinalIgnoreCase)));
+                api.Name.Contains(search) ||
+                api.Description.Contains(search) ||
+                api.Tags.Any(tag => tag.Contains(search)));
         }
 
-        return await Task.FromResult(
-            query.OrderByDescending(x => x.CreatedAt)
-                 .Skip((page - 1) * pageSize)
-                 .Take(pageSize)
-                 .ToList());
+        return await query
+            .OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
     }
 
     public async Task<ApiInterface> UpdateAsync(Guid id, ApiInterfaceUpdateRequest request, string userId)
     {
-        if (!_apis.TryGetValue(id, out var existingApi))
+        var existingApi = await _context.ApiInterfaces.FirstOrDefaultAsync(a => a.Id == id);
+        if (existingApi == null)
         {
             throw new ArgumentException("API Interface not found", nameof(id));
         }
@@ -138,7 +140,9 @@ public class ApiInterfaceService : IApiInterfaceService
 
             existingApi.UpdatedAt = DateTime.UtcNow;
             existingApi.UpdatedBy = userId;
-            existingApi.Status = ApiStatus.Draft;
+            existingApi.Status = ApiStatus.Draft; // Reset to draft after update
+
+            await _context.SaveChangesAsync();
 
             await _auditService.LogAsync("API_UPDATED", $"API Interface '{existingApi.Name}' updated", userId, id.ToString());
 
@@ -157,52 +161,61 @@ public class ApiInterfaceService : IApiInterfaceService
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        if (_apis.TryGetValue(id, out var api))
+        var api = await _context.ApiInterfaces.FirstOrDefaultAsync(a => a.Id == id);
+        if (api == null)
+            return false;
+
+        try
         {
-            try
+            // Stop and cleanup container if running
+            if (api.Status == ApiStatus.Running)
             {
-                if (api.Status == ApiStatus.Running)
-                {
-                    await StopAsync(id);
-                }
-
-                await _infrastructureService.CleanupAsync(api);
-
-                _apis.TryRemove(id, out _);
-
-                await _auditService.LogAsync("API_DELETED", $"API Interface '{api.Name}' deleted", "system", id.ToString());
-
-                _logger.LogInformation("API Interface {Name} ({Id}) deleted", api.Name, id);
-                return true;
+                await StopAsync(id);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting API Interface {Id}", id);
-                await _auditService.LogAsync("API_DELETE_ERROR", $"Failed to delete API Interface {id}: {ex.Message}", "system");
-                return false;
-            }
+
+            // Cleanup infrastructure
+            await _infrastructureService.CleanupAsync(api);
+
+            _context.ApiInterfaces.Remove(api);
+            await _context.SaveChangesAsync();
+
+            await _auditService.LogAsync("API_DELETED", $"API Interface '{api.Name}' deleted", "system", id.ToString());
+
+            _logger.LogInformation("API Interface {Name} ({Id}) deleted", api.Name, id);
+            return true;
         }
-        return false;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting API Interface {Id}", id);
+            await _auditService.LogAsync("API_DELETE_ERROR", $"Failed to delete API Interface {id}: {ex.Message}", "system");
+            return false;
+        }
     }
 
     public async Task<bool> DeployAsync(Guid id)
     {
-        if (!_apis.TryGetValue(id, out var api))
+        var api = await _context.ApiInterfaces.FirstOrDefaultAsync(a => a.Id == id);
+        if (api == null)
             return false;
 
         try
         {
             api.Status = ApiStatus.Deploying;
             api.ErrorMessage = null;
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation("Starting deployment of API Interface {Name} ({Id})", api.Name, id);
 
+            // Setup infrastructure
             await _infrastructureService.SetupAsync(api);
 
+            // Build and deploy container
             var deploymentInfo = await _containerService.DeployAsync(api);
             api.DeploymentInfo = deploymentInfo;
 
             api.Status = ApiStatus.Running;
+            await _context.SaveChangesAsync();
+
             await _auditService.LogAsync("API_DEPLOYED", $"API Interface '{api.Name}' deployed successfully", "system", id.ToString());
 
             _logger.LogInformation("API Interface {Name} ({Id}) deployed successfully", api.Name, id);
@@ -212,6 +225,7 @@ public class ApiInterfaceService : IApiInterfaceService
         {
             api.Status = ApiStatus.Failed;
             api.ErrorMessage = ex.Message;
+            await _context.SaveChangesAsync();
             
             _logger.LogError(ex, "Error deploying API Interface {Name} ({Id})", api.Name, id);
             await _auditService.LogAsync("API_DEPLOY_ERROR", $"Failed to deploy API Interface '{api.Name}': {ex.Message}", "system", id.ToString());
@@ -221,7 +235,8 @@ public class ApiInterfaceService : IApiInterfaceService
 
     public async Task<bool> StopAsync(Guid id)
     {
-        if (!_apis.TryGetValue(id, out var api))
+        var api = await _context.ApiInterfaces.FirstOrDefaultAsync(a => a.Id == id);
+        if (api == null)
             return false;
 
         try
@@ -232,6 +247,8 @@ public class ApiInterfaceService : IApiInterfaceService
             }
 
             api.Status = ApiStatus.Stopped;
+            await _context.SaveChangesAsync();
+
             await _auditService.LogAsync("API_STOPPED", $"API Interface '{api.Name}' stopped", "system", id.ToString());
 
             _logger.LogInformation("API Interface {Name} ({Id}) stopped", api.Name, id);
@@ -240,6 +257,7 @@ public class ApiInterfaceService : IApiInterfaceService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error stopping API Interface {Name} ({Id})", api.Name, id);
+            await _auditService.LogAsync("API_STOP_ERROR", $"Failed to stop API Interface '{api.Name}': {ex.Message}", "system", id.ToString());
             return false;
         }
     }
@@ -247,30 +265,39 @@ public class ApiInterfaceService : IApiInterfaceService
     public async Task<bool> RestartAsync(Guid id)
     {
         await StopAsync(id);
-        await Task.Delay(2000);
+        await Task.Delay(2000); // Wait for graceful shutdown
         return await DeployAsync(id);
     }
 
     public async Task<ApiInterface> ValidateAsync(Guid id)
     {
-        if (!_apis.TryGetValue(id, out var api))
+        var api = await _context.ApiInterfaces.FirstOrDefaultAsync(a => a.Id == id);
+        if (api == null)
             throw new ArgumentException("API Interface not found", nameof(id));
 
         try
         {
             api.Status = ApiStatus.Validating;
+            await _context.SaveChangesAsync();
 
+            // Validate GraphQL schema
             if (api.Type == ApiType.GraphQL && !string.IsNullOrWhiteSpace(api.GraphQLSchema))
             {
                 await ValidateGraphQLSchemaAsync(api.GraphQLSchema);
             }
 
+            // Validate Swagger JSON
             if (!string.IsNullOrWhiteSpace(api.SwaggerJson))
             {
                 await ValidateSwaggerJsonAsync(api.SwaggerJson);
             }
 
-            api.Status = ApiStatus.Draft;
+            // Validate infrastructure configuration
+            await ValidateInfrastructureAsync(api.Infrastructure);
+
+            api.Status = ApiStatus.Draft; // Return to draft after successful validation
+            await _context.SaveChangesAsync();
+
             await _auditService.LogAsync("API_VALIDATED", $"API Interface '{api.Name}' validated successfully", "system", id.ToString());
 
             return api;
@@ -279,15 +306,18 @@ public class ApiInterfaceService : IApiInterfaceService
         {
             api.Status = ApiStatus.Failed;
             api.ErrorMessage = ex.Message;
+            await _context.SaveChangesAsync();
             
             _logger.LogError(ex, "Validation failed for API Interface {Name} ({Id})", api.Name, id);
+            await _auditService.LogAsync("API_VALIDATION_ERROR", $"Validation failed for API Interface '{api.Name}': {ex.Message}", "system", id.ToString());
             throw;
         }
     }
 
     public async Task<Dictionary<string, object>> GetMetricsAsync(Guid id)
     {
-        if (!_apis.TryGetValue(id, out var api) || api.DeploymentInfo == null)
+        var api = await _context.ApiInterfaces.FirstOrDefaultAsync(a => a.Id == id);
+        if (api == null || api.DeploymentInfo == null)
             return new Dictionary<string, object>();
 
         try
@@ -303,7 +333,8 @@ public class ApiInterfaceService : IApiInterfaceService
 
     public async Task<List<string>> GetLogsAsync(Guid id, int lines = 100)
     {
-        if (!_apis.TryGetValue(id, out var api) || api.DeploymentInfo == null)
+        var api = await _context.ApiInterfaces.FirstOrDefaultAsync(a => a.Id == id);
+        if (api == null || api.DeploymentInfo == null)
             return new List<string>();
 
         try
@@ -322,7 +353,7 @@ public class ApiInterfaceService : IApiInterfaceService
         if (string.IsNullOrWhiteSpace(request.Name))
             throw new ArgumentException("Name is required");
 
-        if (_apis.Values.Any(x => x.Name.Equals(request.Name, StringComparison.OrdinalIgnoreCase)))
+        if (await _context.ApiInterfaces.AnyAsync(x => x.Name.Equals(request.Name)))
             throw new ArgumentException("An API Interface with this name already exists");
 
         if (request.Type == ApiType.GraphQL && string.IsNullOrWhiteSpace(request.GraphQLSchema))
@@ -333,6 +364,7 @@ public class ApiInterfaceService : IApiInterfaceService
 
     private async Task ValidateGraphQLSchemaAsync(string schema)
     {
+        // Basic GraphQL schema validation
         if (!schema.Contains("type") && !schema.Contains("Query"))
             throw new ArgumentException("Invalid GraphQL schema");
 
@@ -359,75 +391,15 @@ public class ApiInterfaceService : IApiInterfaceService
         await Task.CompletedTask;
     }
 
-    private void SeedExampleData()
+    private async Task ValidateInfrastructureAsync(InfrastructureConfig infrastructure)
     {
-        var exampleApi = new ApiInterface
+        // Validate database configuration
+        if (infrastructure.Database.Type != DatabaseType.Redis && 
+            string.IsNullOrWhiteSpace(infrastructure.Database.ConnectionString))
         {
-            Id = Guid.NewGuid(),
-            Name = "Demo GraphQL API",
-            Description = "API de demonstração completa com GraphQL e infraestrutura moderna",
-            Type = ApiType.GraphQL,
-            Version = "1.0.0",
-            GraphQLSchema = @"
-                type Query {
-                    users: [User]
-                    user(id: ID!): User
-                }
-                
-                type User {
-                    id: ID!
-                    name: String!
-                    email: String!
-                    posts: [Post]
-                }
-                
-                type Post {
-                    id: ID!
-                    title: String!
-                    content: String!
-                    author: User!
-                }
-            ",
-            Infrastructure = new InfrastructureConfig
-            {
-                Database = new DatabaseConfig
-                {
-                    Type = DatabaseType.PostgreSQL,
-                    ConnectionString = "postgres://user:password@localhost:5432/demo_db",
-                    EnableReadReplicas = true,
-                    MaxConnections = 100
-                },
-                Messaging = new MessagingConfig
-                {
-                    Type = MessagingType.RabbitMQ,
-                    ConnectionString = "amqp://guest:guest@localhost:5672/",
-                    Queues = new List<string> { "notifications", "events" }
-                },
-                Cache = new CacheConfig
-                {
-                    Type = CacheType.Redis,
-                    ConnectionString = "redis://localhost:6379",
-                    DefaultTTL = 3600
-                }
-            },
-            Security = new SecurityConfig
-            {
-                Authentication = new AuthenticationConfig
-                {
-                    Type = AuthenticationType.JWT
-                },
-                RateLimit = new RateLimitConfig
-                {
-                    Enabled = true,
-                    RequestsPerMinute = 100
-                }
-            },
-            Status = ApiStatus.Draft,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "system",
-            Tags = new List<string> { "demo", "graphql", "modern" }
-        };
+            throw new ArgumentException("Database connection string is required");
+        }
 
-        _apis[exampleApi.Id] = exampleApi;
+        await Task.CompletedTask;
     }
 }

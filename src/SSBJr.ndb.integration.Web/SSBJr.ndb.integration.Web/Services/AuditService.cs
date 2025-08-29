@@ -1,4 +1,5 @@
-using System.Collections.Concurrent;
+using SSBJr.ndb.integration.Web.Data;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace SSBJr.ndb.integration.Web.Services;
@@ -36,12 +37,16 @@ public enum AuditSeverity
 
 public class AuditService : IAuditService
 {
-    private readonly ConcurrentBag<AuditLog> _auditLogs = new();
+    private readonly ApiManagerDbContext _context;
     private readonly ILogger<AuditService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public AuditService(ILogger<AuditService> logger, IHttpContextAccessor httpContextAccessor)
+    public AuditService(
+        ApiManagerDbContext context,
+        ILogger<AuditService> logger, 
+        IHttpContextAccessor httpContextAccessor)
     {
+        _context = context;
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
     }
@@ -68,12 +73,11 @@ public class AuditService : IAuditService
                 Source = "ApiManager"
             };
 
-            _auditLogs.Add(auditLog);
+            _context.AuditLogs.Add(auditLog);
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation("Audit: {Action} - {Description} by {UserId} at {Timestamp}", 
                 action, description, userId, auditLog.Timestamp);
-
-            await Task.CompletedTask;
         }
         catch (Exception ex)
         {
@@ -83,47 +87,70 @@ public class AuditService : IAuditService
 
     public async Task<IEnumerable<AuditLog>> GetLogsAsync(int page = 1, int pageSize = 50, string? entityId = null, string? userId = null, DateTime? fromDate = null, DateTime? toDate = null)
     {
-        var query = _auditLogs.AsEnumerable();
+        try
+        {
+            var query = _context.AuditLogs.AsQueryable();
 
-        if (!string.IsNullOrEmpty(entityId))
-            query = query.Where(log => log.EntityId == entityId);
+            if (!string.IsNullOrEmpty(entityId))
+                query = query.Where(log => log.EntityId == entityId);
 
-        if (!string.IsNullOrEmpty(userId))
-            query = query.Where(log => log.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(userId))
+                query = query.Where(log => log.UserId.Equals(userId));
 
-        if (fromDate.HasValue)
-            query = query.Where(log => log.Timestamp >= fromDate.Value);
+            if (fromDate.HasValue)
+                query = query.Where(log => log.Timestamp >= fromDate.Value);
 
-        if (toDate.HasValue)
-            query = query.Where(log => log.Timestamp <= toDate.Value);
+            if (toDate.HasValue)
+                query = query.Where(log => log.Timestamp <= toDate.Value);
 
-        var result = query
-            .OrderByDescending(log => log.Timestamp)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
-
-        return await Task.FromResult(result);
+            return await query
+                .OrderByDescending(log => log.Timestamp)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving audit logs");
+            return new List<AuditLog>();
+        }
     }
 
     public async Task<Dictionary<string, object>> GetAuditStatisticsAsync()
     {
-        var logs = _auditLogs.ToList();
-        var now = DateTime.UtcNow;
-        
-        var stats = new Dictionary<string, object>
+        try
         {
-            ["total_logs"] = logs.Count,
-            ["logs_today"] = logs.Count(l => l.Timestamp.Date == now.Date),
-            ["logs_this_week"] = logs.Count(l => l.Timestamp >= now.AddDays(-7)),
-            ["unique_users"] = logs.Select(l => l.UserId).Distinct().Count(),
-            ["severity_breakdown"] = logs.GroupBy(l => l.Severity)
-                .ToDictionary(g => g.Key.ToString(), g => g.Count()),
-            ["action_breakdown"] = logs.GroupBy(l => l.Action)
-                .ToDictionary(g => g.Key, g => g.Count())
-        };
+            var now = DateTime.UtcNow;
+            var totalLogs = await _context.AuditLogs.CountAsync();
+            var logsToday = await _context.AuditLogs.CountAsync(l => l.Timestamp.Date == now.Date);
+            var logsThisWeek = await _context.AuditLogs.CountAsync(l => l.Timestamp >= now.AddDays(-7));
+            var uniqueUsers = await _context.AuditLogs.Select(l => l.UserId).Distinct().CountAsync();
 
-        return await Task.FromResult(stats);
+            var severityBreakdown = await _context.AuditLogs
+                .GroupBy(l => l.Severity)
+                .ToDictionaryAsync(g => g.Key.ToString(), g => g.Count());
+
+            var actionBreakdown = await _context.AuditLogs
+                .GroupBy(l => l.Action)
+                .ToDictionaryAsync(g => g.Key, g => g.Count());
+
+            var stats = new Dictionary<string, object>
+            {
+                ["total_logs"] = totalLogs,
+                ["logs_today"] = logsToday,
+                ["logs_this_week"] = logsThisWeek,
+                ["unique_users"] = uniqueUsers,
+                ["severity_breakdown"] = severityBreakdown,
+                ["action_breakdown"] = actionBreakdown
+            };
+
+            return stats;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting audit statistics");
+            return new Dictionary<string, object>();
+        }
     }
 
     private string? GetClientIpAddress(HttpContext? httpContext)
@@ -166,25 +193,53 @@ public class AuditService : IAuditService
 
 public class AuditArchiveService : BackgroundService
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<AuditArchiveService> _logger;
+    private readonly IConfiguration _configuration;
 
-    public AuditArchiveService(ILogger<AuditArchiveService> logger)
+    public AuditArchiveService(
+        IServiceProvider serviceProvider,
+        ILogger<AuditArchiveService> logger,
+        IConfiguration configuration)
     {
+        _serviceProvider = serviceProvider;
         _logger = logger;
+        _configuration = configuration;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var intervalHours = _configuration.GetValue<int>("AuditArchive:IntervalHours", 24);
+        var archiveOlderThanDays = _configuration.GetValue<int>("AuditArchive:ArchiveOlderThanDays", 90);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 _logger.LogInformation("Audit archive service running");
-                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                
+                using var scope = _serviceProvider.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<ApiManagerDbContext>();
+
+                var cutoffDate = DateTime.UtcNow.AddDays(-archiveOlderThanDays);
+                var logsToArchive = await context.AuditLogs
+                    .Where(log => log.Timestamp < cutoffDate)
+                    .CountAsync(stoppingToken);
+
+                if (logsToArchive > 0)
+                {
+                    _logger.LogInformation("Found {Count} audit logs to archive", logsToArchive);
+                    
+                    // Here you could implement actual archiving logic
+                    // For now, we'll just log the count
+                }
+
+                await Task.Delay(TimeSpan.FromHours(intervalHours), stoppingToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in audit archive service");
+                await Task.Delay(TimeSpan.FromMinutes(30), stoppingToken); // Wait 30 min on error
             }
         }
     }

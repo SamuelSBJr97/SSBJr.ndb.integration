@@ -1,4 +1,9 @@
 @page "/login"
+@using Microsoft.AspNetCore.Components.Authorization
+@using SSBJr.ndb.integration.Web.Services
+@inject CustomAuthenticationStateProvider AuthProvider
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
 @rendermode InteractiveServer
 
 <PageTitle>Login - SSBJr API Manager</PageTitle>
@@ -25,6 +30,7 @@
                 <p class="text-muted">Sistema de gerenciamento de APIs</p>
             </div>
 
+            <!-- Login Form -->
             <div class="form-floating mb-3">
                 <input type="text" class="form-control" id="floatingInput" placeholder="Username" @bind="username" />
                 <label for="floatingInput">Nome de usuário</label>
@@ -35,6 +41,13 @@
                 <label for="floatingPassword">Senha</label>
             </div>
 
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> @errorMessage
+                </div>
+            }
+
             <button type="submit" class="btn btn-lg btn-primary w-100 mb-3" @onclick="HandleLogin" disabled="@isLoading">
                 @if (isLoading)
                 {
@@ -43,20 +56,18 @@
                 Entrar
             </button>
 
-            @if (!string.IsNullOrEmpty(errorMessage))
-            {
-                <div class="alert alert-danger" role="alert">
-                    <i class="bi bi-exclamation-triangle"></i> @errorMessage
-                </div>
-            }
-
             <!-- Demo Credentials -->
             <div class="mt-4 p-3 bg-light rounded">
-                <h6 class="text-muted mb-2">Demo:</h6>
+                <h6 class="text-muted mb-2">Credenciais de demonstração:</h6>
                 <small class="text-muted">
                     <strong>Usuário:</strong> admin<br>
                     <strong>Senha:</strong> admin123
                 </small>
+                <div class="mt-2">
+                    <button class="btn btn-sm btn-outline-primary" @onclick="FillDemoCredentials">
+                        <i class="bi bi-lightning"></i> Usar demo
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -111,8 +122,6 @@
     private bool isLoading = false;
     private string errorMessage = string.Empty;
 
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
-
     private async Task HandleLogin()
     {
         isLoading = true;
@@ -120,14 +129,14 @@
 
         try
         {
-            // Simple authentication check
+            // Simple authentication check for demo
             if (username == "admin" && password == "admin123")
             {
                 Navigation.NavigateTo("/", forceLoad: true);
             }
             else
             {
-                errorMessage = "Credenciais inválidas";
+                errorMessage = "Credenciais inválidas. Use: admin / admin123";
             }
         }
         catch (Exception ex)
@@ -138,5 +147,12 @@
         {
             isLoading = false;
         }
+    }
+
+    private void FillDemoCredentials()
+    {
+        username = "admin";
+        password = "admin123";
+        StateHasChanged();
     }
 }

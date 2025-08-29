@@ -455,17 +455,32 @@ public class InfrastructureService : IInfrastructureService
     {
         return type switch
         {
+            MessagingType.Apache_Kafka => ("confluentinc/cp-kafka:latest", new List<string> 
+            { 
+                "KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181", 
+                "KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092",
+                "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT",
+                "KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT",
+                "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1",
+                "KAFKA_CREATE_TOPICS=default:1:1"
+            }, new List<int> { 9092 }),
+            
+            MessagingType.NATS => ("nats:2.9-alpine", new List<string>
+            {
+                "NATS_ENABLE_JETSTREAM=true"
+            }, new List<int> { 4222, 8222 }),
+            
             MessagingType.RabbitMQ => ("rabbitmq:3-management", new List<string> 
             { 
                 "RABBITMQ_DEFAULT_USER=guest", 
                 "RABBITMQ_DEFAULT_PASS=guest" 
             }, new List<int> { 5672, 15672 }),
             
-            MessagingType.Apache_Kafka => ("confluentinc/cp-kafka:latest", new List<string> 
-            { 
-                "KAFKA_ZOOKEEPER_CONNECT=localhost:2181", 
-                "KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092" 
-            }, new List<int> { 9092 }),
+            MessagingType.Azure_ServiceBus => throw new InvalidOperationException("Azure Service Bus is a cloud service and doesn't require local containers"),
+            MessagingType.AWS_SQS => throw new InvalidOperationException("AWS SQS is a cloud service and doesn't require local containers"),
+            MessagingType.AWS_EventBridge => throw new InvalidOperationException("AWS EventBridge is a cloud service and doesn't require local containers"),
+            MessagingType.Google_PubSub => throw new InvalidOperationException("Google Pub/Sub is a cloud service and doesn't require local containers"),
+            MessagingType.Apache_Pulsar => ("apachepulsar/pulsar:latest", new List<string>(), new List<int> { 6650, 8080 }),
             
             _ => throw new ArgumentException($"Unsupported messaging type: {type}")
         };

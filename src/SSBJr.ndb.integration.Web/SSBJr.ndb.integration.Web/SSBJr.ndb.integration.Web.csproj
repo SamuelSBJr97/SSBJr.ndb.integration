@@ -23,6 +23,15 @@
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    
+    <!-- Modern Messaging Services -->
+    <PackageReference Include="Confluent.Kafka" Version="2.3.0" />
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.17.5" />
+    <PackageReference Include="NATS.Client.Core" Version="2.4.0" />
+    <PackageReference Include="NATS.Client.JetStream" Version="2.4.0" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.300.14" />
+    <PackageReference Include="AWSSDK.EventBridge" Version="3.7.300.14" />
+    <PackageReference Include="Google.Cloud.PubSub.V1" Version="3.9.0" />
   </ItemGroup>
 
 </Project>

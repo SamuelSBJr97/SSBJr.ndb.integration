@@ -103,6 +103,26 @@ builder.Services.AddScoped<IInfrastructureService, InfrastructureService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Add modern messaging services
+builder.Services.AddSingleton<SSBJr.ndb.integration.Web.Services.Messaging.IMessagingServiceFactory, SSBJr.ndb.integration.Web.Services.Messaging.MessagingServiceFactory>();
+builder.Services.AddScoped<SSBJr.ndb.integration.Web.Services.Messaging.IMessagingService>(provider =>
+{
+    var factory = provider.GetRequiredService<SSBJr.ndb.integration.Web.Services.Messaging.IMessagingServiceFactory>();
+    
+    // Default configuration - can be overridden per API
+    var defaultConfig = new MessagingConfig
+    {
+        Type = MessagingType.None, // Will be configured per API interface
+        ConnectionString = "",
+        EnableBatching = true,
+        BatchSize = 100,
+        MaxRetries = 3,
+        ConsumerGroup = "ssbjr-default"
+    };
+    
+    return factory.CreateMessagingService(defaultConfig);
+});
+
 // Add background services
 builder.Services.AddHostedService<AuditArchiveService>();
 

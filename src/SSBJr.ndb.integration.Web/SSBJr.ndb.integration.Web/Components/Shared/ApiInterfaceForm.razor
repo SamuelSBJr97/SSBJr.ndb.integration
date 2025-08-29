@@ -119,10 +119,20 @@
                         <label class="form-label">Tipo</label>
                         <InputSelect @bind-Value="Model.Infrastructure.Messaging.Type" class="form-select">
                             <option value="@MessagingType.None">Nenhum</option>
-                            <option value="@MessagingType.RabbitMQ">RabbitMQ</option>
-                            <option value="@MessagingType.Apache_Kafka">Apache Kafka</option>
-                            <option value="@MessagingType.Azure_ServiceBus">Azure Service Bus</option>
-                            <option value="@MessagingType.AWS_SQS">AWS SQS</option>
+                            <optgroup label="?? Serviços Modernos (Recomendados)">
+                                <option value="@MessagingType.Apache_Kafka">Apache Kafka</option>
+                                <option value="@MessagingType.NATS">NATS</option>
+                                <option value="@MessagingType.Azure_ServiceBus">Azure Service Bus</option>
+                            </optgroup>
+                            <optgroup label="?? Serviços Cloud">
+                                <option value="@MessagingType.AWS_SQS">AWS SQS</option>
+                                <option value="@MessagingType.AWS_EventBridge">AWS EventBridge</option>
+                                <option value="@MessagingType.Google_PubSub">Google Pub/Sub</option>
+                                <option value="@MessagingType.Apache_Pulsar">Apache Pulsar</option>
+                            </optgroup>
+                            <optgroup label="?? Legado (Não Recomendado)">
+                                <option value="@MessagingType.RabbitMQ">RabbitMQ (Deprecated)</option>
+                            </optgroup>
                         </InputSelect>
                     </div>
                     @if (Model.Infrastructure.Messaging.Type != MessagingType.None)

@@ -176,7 +176,8 @@ SSBJr.ndb.integration/
 ### ?? Infraestrutura Suportada
 
 - **Bancos**: PostgreSQL, MySQL, SQLite, MongoDB, Redis
-- **Mensageria**: RabbitMQ, Apache Kafka, Azure Service Bus, AWS SQS
+- **Mensageria Moderna**: Apache Kafka, NATS, Azure Service Bus, AWS SQS/EventBridge, Google Pub/Sub
+- **Mensageria Legada**: RabbitMQ (deprecated - migre para soluções modernas)
 - **Cache**: Redis, Memcached, In-Memory
 - **Containers**: Docker com orquestração automática
 

@@ -73,19 +73,31 @@ public class MessagingConfig
 {
     public MessagingType Type { get; set; }
     public string ConnectionString { get; set; } = string.Empty;
-    public List<string> Queues { get; set; } = new();
-    public List<string> Topics { get; set; } = new();
+    public List<string> Topics { get; set; } = new(); // Kafka topics, Service Bus topics, etc.
+    public List<string> Queues { get; set; } = new(); // SQS queues, Service Bus queues, etc.
+    public List<string> Subscriptions { get; set; } = new(); // Event subscriptions
     public bool EnableDeadLetterQueue { get; set; } = true;
+    public bool EnableBatching { get; set; } = true;
+    public int BatchSize { get; set; } = 100;
+    public int MaxRetries { get; set; } = 3;
+    public TimeSpan MessageTimeout { get; set; } = TimeSpan.FromMinutes(5);
+    public bool EnablePartitioning { get; set; } = true; // For Kafka
+    public int PartitionCount { get; set; } = 3; // For Kafka
+    public string ConsumerGroup { get; set; } = "default"; // For Kafka
     public Dictionary<string, object> Options { get; set; } = new();
 }
 
 public enum MessagingType
 {
-    RabbitMQ,
+    None,
     Apache_Kafka,
     Azure_ServiceBus,
     AWS_SQS,
-    None
+    AWS_EventBridge,
+    Google_PubSub,
+    NATS,
+    Apache_Pulsar,
+    RabbitMQ // Mantido para compatibilidade, mas não recomendado
 }
 
 public class CacheConfig

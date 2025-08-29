@@ -1,11 +1,11 @@
 import React from 'react';
-import { DatabaseProvisioning } from './components/DatabaseProvisioning';
+import { ApiManager } from './components/ApiManager';
 import './App.css';
 
 function App() {
   return (
     <div className="App">
-      <DatabaseProvisioning />
+      <ApiManager />
     </div>
   );
 }

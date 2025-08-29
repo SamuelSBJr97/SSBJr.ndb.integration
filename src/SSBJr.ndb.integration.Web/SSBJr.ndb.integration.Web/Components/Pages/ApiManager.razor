@@ -1,0 +1,443 @@
+@page "/api-manager"
+@using Microsoft.AspNetCore.SignalR.Client
+@using System.Text.Json
+@using System.Text
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Gerenciador de APIs</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="bi bi-cloud-upload"></i> Gerenciador de APIs
+            </h1>
+            <p class="text-muted">Faça upload de arquivos Swagger JSON para hospedar APIs automaticamente</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-upload"></i> Nova API</h5>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="@newApiRequest" OnValidSubmit="@CreateApi">
+                        <div class="mb-3">
+                            <label class="form-label">Nome da API</label>
+                            <InputText @bind-Value="newApiRequest.Name" class="form-control" placeholder="Ex: Minha API" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Descrição</label>
+                            <InputTextArea @bind-Value="newApiRequest.Description" class="form-control" rows="3" placeholder="Descrição da API" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Arquivo Swagger JSON</label>
+                            <InputFile OnChange="@OnFileSelected" class="form-control" accept=".json" />
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle"></i> @errorMessage
+                            </div>
+                        }
+                        
+                        <button type="submit" class="btn btn-primary" disabled="@isUploading">
+                            @if (isUploading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <text>Criando...</text>
+                            }
+                            else
+                            {
+                                <i class="bi bi-plus-circle"></i>
+                                <text>Criar API</text>
+                            }
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="bi bi-list"></i> APIs Hospedadas</h5>
+                    <button @onclick="LoadApis" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-clockwise"></i> Atualizar
+                    </button>
+                </div>
+                <div class="card-body">
+                    @if (apis == null)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="mt-2">Carregando APIs...</p>
+                        </div>
+                    }
+                    else if (!apis.Any())
+                    {
+                        <div class="text-center text-muted">
+                            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                            <p class="mt-2">Nenhuma API hospedada ainda.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Status</th>
+                                        <th>Criado em</th>
+                                        <th>Última verificação</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var api in apis)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@api.Name</strong>
+                                                @if (!string.IsNullOrEmpty(api.Description))
+                                                {
+                                                    <br><small class="text-muted">@api.Description</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge @GetStatusBadgeClass(api.Status)">
+                                                    @api.Status
+                                                </span>
+                                                @if (!string.IsNullOrEmpty(api.ErrorMessage))
+                                                {
+                                                    <br><small class="text-danger">@api.ErrorMessage</small>
+                                                }
+                                            </td>
+                                            <td>@api.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>
+                                                @if (api.LastHealthCheck.HasValue)
+                                                {
+                                                    @api.LastHealthCheck.Value.ToString("dd/MM/yyyy HH:mm")
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    @if (api.Status == ApiStatus.Running)
+                                                    {
+                                                        <button @onclick="() => StopApi(api.Id)" class="btn btn-outline-warning" title="Parar">
+                                                            <i class="bi bi-stop"></i>
+                                                        </button>
+                                                    }
+                                                    else if (api.Status == ApiStatus.Stopped)
+                                                    {
+                                                        <button @onclick="() => StartApi(api.Id)" class="btn btn-outline-success" title="Iniciar">
+                                                            <i class="bi bi-play"></i>
+                                                        </button>
+                                                    }
+                                                    
+                                                    <button @onclick="() => CheckHealth(api.Id)" class="btn btn-outline-info" title="Verificar Saúde">
+                                                        <i class="bi bi-heart"></i>
+                                                    </button>
+                                                    
+                                                    <button @onclick="() => DeleteApi(api.Id)" class="btn btn-outline-danger" title="Deletar">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notificações -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    @foreach (var notification in notifications.TakeLast(5))
+    {
+        <div class="toast show" role="alert">
+            <div class="toast-header">
+                <i class="bi @GetNotificationIcon(notification.Type) me-2"></i>
+                <strong class="me-auto">@notification.Title</strong>
+                <small>@notification.Timestamp.ToString("HH:mm:ss")</small>
+            </div>
+            <div class="toast-body">
+                @notification.Message
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private ApiDeploymentRequest newApiRequest = new();
+    private List<ApiDefinition>? apis;
+    private bool isUploading;
+    private string? errorMessage;
+    private HubConnection? hubConnection;
+    private List<NotificationItem> notifications = new();
+
+    public enum ApiStatus
+    {
+        Created,
+        Deploying,
+        Running,
+        Failed,
+        Stopped
+    }
+
+    public class ApiDefinition
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string SwaggerJson { get; set; } = string.Empty;
+        public string BaseUrl { get; set; } = string.Empty;
+        public ApiStatus Status { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? LastHealthCheck { get; set; }
+        public string? ErrorMessage { get; set; }
+        public Dictionary<string, object> Metadata { get; set; } = new();
+    }
+
+    public class ApiDeploymentRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string SwaggerJson { get; set; } = string.Empty;
+        public Dictionary<string, object> Configuration { get; set; } = new();
+    }
+
+    public class NotificationItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadApis();
+        await ConnectToNotificationHub();
+    }
+
+    private async Task LoadApis()
+    {
+        try
+        {
+            var response = await Http.GetAsync("http://localhost:8080/api/apis");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                apis = JsonSerializer.Deserialize<List<ApiDefinition>>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar APIs: {ex.Message}";
+        }
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            try
+            {
+                using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB max
+                using var reader = new StreamReader(stream);
+                newApiRequest.SwaggerJson = await reader.ReadToEndAsync();
+                
+                // Validar JSON
+                JsonDocument.Parse(newApiRequest.SwaggerJson);
+                errorMessage = null;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Erro ao ler arquivo: {ex.Message}";
+                newApiRequest.SwaggerJson = string.Empty;
+            }
+        }
+    }
+
+    private async Task CreateApi()
+    {
+        if (string.IsNullOrWhiteSpace(newApiRequest.Name) || string.IsNullOrWhiteSpace(newApiRequest.SwaggerJson))
+        {
+            errorMessage = "Nome e arquivo Swagger são obrigatórios";
+            return;
+        }
+
+        isUploading = true;
+        errorMessage = null;
+
+        try
+        {
+            var json = JsonSerializer.Serialize(newApiRequest);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            
+            var response = await Http.PostAsync("http://localhost:8080/api/apis", content);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                newApiRequest = new ApiDeploymentRequest();
+                await LoadApis();
+                AddNotification("Sucesso", "API criada com sucesso!", "success");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Erro ao criar API: {error}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro: {ex.Message}";
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+
+    private async Task StartApi(Guid id)
+    {
+        await Http.PostAsync($"http://localhost:8080/api/apis/{id}/start", null);
+        await LoadApis();
+    }
+
+    private async Task StopApi(Guid id)
+    {
+        await Http.PostAsync($"http://localhost:8080/api/apis/{id}/stop", null);
+        await LoadApis();
+    }
+
+    private async Task CheckHealth(Guid id)
+    {
+        await Http.GetAsync($"http://localhost:8080/api/apis/{id}/health");
+        await LoadApis();
+    }
+
+    private async Task DeleteApi(Guid id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Tem certeza que deseja deletar esta API?");
+        if (confirmed)
+        {
+            await Http.DeleteAsync($"http://localhost:8080/api/apis/{id}");
+            await LoadApis();
+        }
+    }
+
+    private async Task ConnectToNotificationHub()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl("http://localhost:8080/notifications")
+            .Build();
+
+        hubConnection.On<object>("ApiStatusChanged", (data) =>
+        {
+            var json = JsonSerializer.Serialize(data);
+            var notification = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+            
+            AddNotification("Status da API", 
+                $"API {notification?["ApiId"]} mudou para {notification?["Status"]}", 
+                "info");
+            
+            InvokeAsync(LoadApis);
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<object>("ApiHealthCheck", (data) =>
+        {
+            var json = JsonSerializer.Serialize(data);
+            var notification = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+            
+            var isHealthy = notification?["IsHealthy"]?.ToString() == "True";
+            AddNotification("Verificação de Saúde", 
+                $"API {notification?["ApiId"]}: {(isHealthy ? "Saudável" : "Com problemas")}", 
+                isHealthy ? "success" : "warning");
+            
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<object>("Error", (data) =>
+        {
+            var json = JsonSerializer.Serialize(data);
+            var notification = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+            
+            AddNotification("Erro", 
+                notification?["Message"]?.ToString() ?? "Erro desconhecido", 
+                "error");
+            
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private void AddNotification(string title, string message, string type)
+    {
+        notifications.Add(new NotificationItem
+        {
+            Title = title,
+            Message = message,
+            Type = type,
+            Timestamp = DateTime.Now
+        });
+
+        // Manter apenas as 10 últimas notificações
+        if (notifications.Count > 10)
+        {
+            notifications.RemoveAt(0);
+        }
+    }
+
+    private string GetStatusBadgeClass(ApiStatus status) => status switch
+    {
+        ApiStatus.Running => "bg-success",
+        ApiStatus.Deploying => "bg-warning",
+        ApiStatus.Failed => "bg-danger",
+        ApiStatus.Stopped => "bg-secondary",
+        _ => "bg-info"
+    };
+
+    private string GetNotificationIcon(string type) => type switch
+    {
+        "success" => "bi-check-circle-fill text-success",
+        "warning" => "bi-exclamation-triangle-fill text-warning",
+        "error" => "bi-x-circle-fill text-danger",
+        _ => "bi-info-circle-fill text-info"
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}

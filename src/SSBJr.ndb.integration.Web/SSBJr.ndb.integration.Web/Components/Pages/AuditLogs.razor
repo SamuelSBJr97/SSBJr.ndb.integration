@@ -1,0 +1,474 @@
+@page "/audit"
+@using SSBJr.ndb.integration.Web.Services
+@inject IAuditService AuditService
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Auditoria - SSBJr API Manager</PageTitle>
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 text-primary mb-2">
+                        <i class="bi bi-journal-check"></i> Auditoria e Logs
+                    </h1>
+                    <p class="text-muted">Monitore todas as atividades do sistema</p>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary" @onclick="RefreshLogs">
+                        <i class="bi bi-arrow-clockwise"></i> Atualizar
+                    </button>
+                    <button class="btn btn-outline-success" @onclick="ExportLogs">
+                        <i class="bi bi-download"></i> Exportar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        @if (statistics != null)
+        {
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Logs</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@statistics.GetValueOrDefault("total_logs", 0)</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-journal-text text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Hoje</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@statistics.GetValueOrDefault("logs_today", 0)</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-calendar-day text-success" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Esta Semana</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@statistics.GetValueOrDefault("logs_this_week", 0)</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-calendar-week text-warning" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Usuários Únicos</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">@statistics.GetValueOrDefault("unique_users", 0)</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-people text-info" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-funnel"></i> Filtros
+                        <button class="btn btn-sm btn-outline-secondary ms-2" @onclick="ClearFilters">
+                            <i class="bi bi-x"></i> Limpar
+                        </button>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">Usuário</label>
+                            <input type="text" class="form-control" @bind="filterUserId" placeholder="ID do usuário" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Entidade</label>
+                            <input type="text" class="form-control" @bind="filterEntityId" placeholder="ID da entidade" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Data Inicial</label>
+                            <input type="datetime-local" class="form-control" @bind="filterFromDate" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Data Final</label>
+                            <input type="datetime-local" class="form-control" @bind="filterToDate" />
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <button class="btn btn-primary" @onclick="ApplyFilters">
+                                <i class="bi bi-search"></i> Aplicar Filtros
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul"></i> Logs de Auditoria
+                        <span class="badge bg-secondary ms-2">@auditLogs.Count() registros</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (isLoading)
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border spinner-border-lg text-primary"></div>
+                            <p class="mt-2">Carregando logs...</p>
+                        </div>
+                    }
+                    else if (!auditLogs.Any())
+                    {
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                            <p class="mt-2">Nenhum log encontrado</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Ação</th>
+                                        <th>Descrição</th>
+                                        <th>Usuário</th>
+                                        <th>Entidade</th>
+                                        <th>Severidade</th>
+                                        <th>IP</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var log in auditLogs.Take(pageSize))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <small class="text-muted">
+                                                    @log.Timestamp.ToString("dd/MM/yyyy")
+                                                    <br />
+                                                    @log.Timestamp.ToString("HH:mm:ss")
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <span class="badge @GetActionBadgeClass(log.Action)">
+                                                    @log.Action.Replace("_", " ")
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="text-truncate d-inline-block" style="max-width: 200px;" title="@log.Description">
+                                                    @log.Description
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">@log.UserId</small>
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(log.EntityId))
+                                                {
+                                                    <small class="text-muted">
+                                                        @log.EntityType
+                                                        <br />
+                                                        <code>@log.EntityId[..8]...</code>
+                                                    </small>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge @GetSeverityBadgeClass(log.Severity)">
+                                                    @log.Severity
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">@(log.IpAddress ?? "-")</small>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-info" @onclick="() => ShowLogDetails(log)">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">
+                                        Mostrando @Math.Min(pageSize, auditLogs.Count()) de @auditLogs.Count() registros
+                                    </small>
+                                </div>
+                                <div>
+                                    <nav>
+                                        <ul class="pagination pagination-sm mb-0">
+                                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                                <button class="page-link" @onclick="() => ChangePage(currentPage - 1)">Anterior</button>
+                                            </li>
+                                            @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                                            {
+                                                <li class="page-item @(i == currentPage ? "active" : "")">
+                                                    <button class="page-link" @onclick="() => ChangePage(i)">@i</button>
+                                                </li>
+                                            }
+                                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                                <button class="page-link" @onclick="() => ChangePage(currentPage + 1)">Próxima</button>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Details Modal -->
+@if (selectedLog != null)
+{
+    <div class="modal fade show d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-info-circle"></i> Detalhes do Log
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideLogDetails"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>ID:</strong> @selectedLog.Id
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Timestamp:</strong> @selectedLog.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <strong>Ação:</strong> @selectedLog.Action
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Severidade:</strong> @selectedLog.Severity
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <strong>Usuário:</strong> @selectedLog.UserId
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Fonte:</strong> @selectedLog.Source
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <strong>Descrição:</strong>
+                            <p class="mt-1">@selectedLog.Description</p>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(selectedLog.EntityId))
+                    {
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Entidade ID:</strong> @selectedLog.EntityId
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Tipo de Entidade:</strong> @selectedLog.EntityType
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(selectedLog.IpAddress))
+                    {
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Endereço IP:</strong> @selectedLog.IpAddress
+                            </div>
+                            <div class="col-md-6">
+                                <strong>User Agent:</strong> 
+                                <small class="text-muted">@(selectedLog.UserAgent ?? "N/A")</small>
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(selectedLog.AdditionalData))
+                    {
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <strong>Dados Adicionais:</strong>
+                                <pre class="bg-light p-2 mt-1 small">@selectedLog.AdditionalData</pre>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideLogDetails">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<style>
+    .border-left-primary { border-left: 4px solid #4e73df; }
+    .border-left-success { border-left: 4px solid #1cc88a; }
+    .border-left-warning { border-left: 4px solid #f6c23e; }
+    .border-left-info { border-left: 4px solid #36b9cc; }
+</style>
+
+@code {
+    private IEnumerable<AuditLog> auditLogs = new List<AuditLog>();
+    private Dictionary<string, object>? statistics;
+    private AuditLog? selectedLog;
+    private bool isLoading = true;
+
+    // Filters
+    private string filterUserId = string.Empty;
+    private string filterEntityId = string.Empty;
+    private DateTime? filterFromDate;
+    private DateTime? filterToDate;
+
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 25;
+    private int totalPages => (int)Math.Ceiling((double)auditLogs.Count() / pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            auditLogs = await AuditService.GetLogsAsync(currentPage, pageSize * 10, filterEntityId, filterUserId, filterFromDate, filterToDate);
+            statistics = await AuditService.GetAuditStatisticsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading audit data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task RefreshLogs()
+    {
+        await LoadData();
+    }
+
+    private async Task ApplyFilters()
+    {
+        currentPage = 1;
+        await LoadData();
+    }
+
+    private void ClearFilters()
+    {
+        filterUserId = string.Empty;
+        filterEntityId = string.Empty;
+        filterFromDate = null;
+        filterToDate = null;
+        currentPage = 1;
+        _ = LoadData();
+    }
+
+    private async Task ChangePage(int page)
+    {
+        if (page >= 1 && page <= totalPages)
+        {
+            currentPage = page;
+            await LoadData();
+        }
+    }
+
+    private void ShowLogDetails(AuditLog log)
+    {
+        selectedLog = log;
+    }
+
+    private void HideLogDetails()
+    {
+        selectedLog = null;
+    }
+
+    private async Task ExportLogs()
+    {
+        // Implementation for exporting logs
+        await JS.InvokeVoidAsync("alert", "Export functionality will be implemented here");
+    }
+
+    private string GetActionBadgeClass(string action) => action switch
+    {
+        var a when a.Contains("CREATE") => "bg-success",
+        var a when a.Contains("UPDATE") => "bg-warning",
+        var a when a.Contains("DELETE") => "bg-danger",
+        var a when a.Contains("LOGIN") => "bg-info",
+        var a when a.Contains("ERROR") || a.Contains("FAILED") => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private string GetSeverityBadgeClass(AuditSeverity severity) => severity switch
+    {
+        AuditSeverity.Information => "bg-info",
+        AuditSeverity.Warning => "bg-warning",
+        AuditSeverity.Error => "bg-danger",
+        AuditSeverity.Critical => "bg-dark",
+        _ => "bg-secondary"
+    };
+}

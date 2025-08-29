@@ -1,0 +1,389 @@
+@using SSBJr.ndb.integration.Web.Models
+@inject IJSRuntime JS
+
+<EditForm Model="@Model" OnValidSubmit="@HandleSubmit">
+    <div class="row">
+        <!-- Basic Information -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informações Básicas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nome *</label>
+                        <InputText @bind-Value="Model.Name" class="form-control" placeholder="Ex: Minha API GraphQL" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descrição</label>
+                        <InputTextArea @bind-Value="Model.Description" class="form-control" rows="3" placeholder="Descrição da interface" />
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Tipo *</label>
+                                <InputSelect @bind-Value="Model.Type" class="form-select">
+                                    <option value="@ApiType.GraphQL">GraphQL</option>
+                                    <option value="@ApiType.REST">REST</option>
+                                    <option value="@ApiType.Hybrid">Híbrida</option>
+                                </InputSelect>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Versão</label>
+                                <InputText @bind-Value="Model.Version" class="form-control" placeholder="1.0.0" />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tags</label>
+                        <input type="text" class="form-control" placeholder="api, graphql, production (separadas por vírgula)" 
+                               @onchange="@((e) => UpdateTags(e.Value?.ToString()))" 
+                               value="@string.Join(", ", Model.Tags)" />
+                        <small class="text-muted">Tags separadas por vírgula</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schema/Swagger -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-code-slash"></i> Schema & Definições</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.Type == ApiType.GraphQL || Model.Type == ApiType.Hybrid)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">GraphQL Schema</label>
+                            <InputTextArea @bind-Value="Model.GraphQLSchema" class="form-control font-monospace" rows="8" 
+                                           placeholder="type Query { users: [User] }" />
+                            <small class="text-muted">Schema GraphQL completo</small>
+                        </div>
+                    }
+                    
+                    @if (Model.Type == ApiType.REST || Model.Type == ApiType.Hybrid)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Swagger JSON</label>
+                            <InputTextArea @bind-Value="Model.SwaggerJson" class="form-control font-monospace" rows="8" 
+                                           placeholder='{"openapi": "3.0.0", ...}' />
+                            <small class="text-muted">Definição OpenAPI/Swagger</small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Infrastructure Configuration -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-hdd-stack"></i> Configuração de Infraestrutura</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- Database -->
+                <div class="col-md-4">
+                    <h6 class="text-primary"><i class="bi bi-database"></i> Banco de Dados</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo</label>
+                        <InputSelect @bind-Value="Model.Infrastructure.Database.Type" class="form-select">
+                            <option value="@DatabaseType.PostgreSQL">PostgreSQL</option>
+                            <option value="@DatabaseType.MongoDB">MongoDB</option>
+                            <option value="@DatabaseType.MySQL">MySQL</option>
+                            <option value="@DatabaseType.SQLServer">SQL Server</option>
+                            <option value="@DatabaseType.Redis">Redis</option>
+                        </InputSelect>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">String de Conexão</label>
+                        <InputText @bind-Value="Model.Infrastructure.Database.ConnectionString" class="form-control" 
+                                   placeholder="Server=localhost;Database=mydb;" />
+                    </div>
+                    <div class="form-check">
+                        <InputCheckbox @bind-Value="Model.Infrastructure.Database.EnableReadReplicas" class="form-check-input" id="readReplicas" />
+                        <label class="form-check-label" for="readReplicas">Réplicas de Leitura</label>
+                    </div>
+                </div>
+
+                <!-- Messaging -->
+                <div class="col-md-4">
+                    <h6 class="text-success"><i class="bi bi-envelope"></i> Mensageria</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo</label>
+                        <InputSelect @bind-Value="Model.Infrastructure.Messaging.Type" class="form-select">
+                            <option value="@MessagingType.None">Nenhum</option>
+                            <option value="@MessagingType.RabbitMQ">RabbitMQ</option>
+                            <option value="@MessagingType.Apache_Kafka">Apache Kafka</option>
+                            <option value="@MessagingType.Azure_ServiceBus">Azure Service Bus</option>
+                            <option value="@MessagingType.AWS_SQS">AWS SQS</option>
+                        </InputSelect>
+                    </div>
+                    @if (Model.Infrastructure.Messaging.Type != MessagingType.None)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">String de Conexão</label>
+                            <InputText @bind-Value="Model.Infrastructure.Messaging.ConnectionString" class="form-control" 
+                                       placeholder="amqp://localhost:5672" />
+                        </div>
+                        <div class="form-check">
+                            <InputCheckbox @bind-Value="Model.Infrastructure.Messaging.EnableDeadLetterQueue" class="form-check-input" id="deadLetter" />
+                            <label class="form-check-label" for="deadLetter">Dead Letter Queue</label>
+                        </div>
+                    }
+                </div>
+
+                <!-- Cache -->
+                <div class="col-md-4">
+                    <h6 class="text-warning"><i class="bi bi-lightning"></i> Cache</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo</label>
+                        <InputSelect @bind-Value="Model.Infrastructure.Cache.Type" class="form-select">
+                            <option value="@CacheType.None">Nenhum</option>
+                            <option value="@CacheType.InMemory">Em Memória</option>
+                            <option value="@CacheType.Redis">Redis</option>
+                            <option value="@CacheType.Memcached">Memcached</option>
+                        </InputSelect>
+                    </div>
+                    @if (Model.Infrastructure.Cache.Type != CacheType.None && Model.Infrastructure.Cache.Type != CacheType.InMemory)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">String de Conexão</label>
+                            <InputText @bind-Value="Model.Infrastructure.Cache.ConnectionString" class="form-control" 
+                                       placeholder="redis://localhost:6379" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">TTL Padrão (segundos)</label>
+                            <InputNumber @bind-Value="Model.Infrastructure.Cache.DefaultTTL" class="form-control" />
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Scaling Configuration -->
+            <div class="mt-4">
+                <h6 class="text-info"><i class="bi bi-arrows-angle-expand"></i> Configuração de Escala</h6>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Instâncias Mínimas</label>
+                            <InputNumber @bind-Value="Model.Infrastructure.Scaling.MinInstances" class="form-control" min="1" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Instâncias Máximas</label>
+                            <InputNumber @bind-Value="Model.Infrastructure.Scaling.MaxInstances" class="form-control" min="1" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">CPU Alvo (%)</label>
+                            <InputNumber @bind-Value="Model.Infrastructure.Scaling.TargetCPU" class="form-control" min="1" max="100" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check mt-4">
+                            <InputCheckbox @bind-Value="Model.Infrastructure.Scaling.EnableAutoScaling" class="form-check-input" id="autoScaling" />
+                            <label class="form-check-label" for="autoScaling">Auto Scaling</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Configuration -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-shield-check"></i> Configuração de Segurança</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-primary">Autenticação</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo</label>
+                        <InputSelect @bind-Value="Model.Security.Authentication.Type" class="form-select">
+                            <option value="@AuthenticationType.None">Nenhuma</option>
+                            <option value="@AuthenticationType.JWT">JWT</option>
+                            <option value="@AuthenticationType.OAuth2">OAuth2</option>
+                            <option value="@AuthenticationType.ApiKey">API Key</option>
+                            <option value="@AuthenticationType.Basic">Basic Auth</option>
+                            <option value="@AuthenticationType.Certificate">Certificado</option>
+                        </InputSelect>
+                    </div>
+
+                    @if (Model.Security.Authentication.Type == AuthenticationType.JWT)
+                    {
+                        @if (Model.Security.Authentication.Jwt == null)
+                        {
+                            Model.Security.Authentication.Jwt = new JwtConfig();
+                        }
+                        <div class="mb-3">
+                            <label class="form-label">Chave Secreta</label>
+                            <InputText @bind-Value="Model.Security.Authentication.Jwt.SecretKey" class="form-control" placeholder="sua-chave-secreta" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Issuer</label>
+                            <InputText @bind-Value="Model.Security.Authentication.Jwt.Issuer" class="form-control" placeholder="minha-api" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Audience</label>
+                            <InputText @bind-Value="Model.Security.Authentication.Jwt.Audience" class="form-control" placeholder="meus-clientes" />
+                        </div>
+                    }
+                </div>
+
+                <div class="col-md-6">
+                    <h6 class="text-success">Rate Limiting</h6>
+                    <div class="form-check mb-3">
+                        <InputCheckbox @bind-Value="Model.Security.RateLimit.Enabled" class="form-check-input" id="rateLimitEnabled" />
+                        <label class="form-check-label" for="rateLimitEnabled">Ativar Rate Limiting</label>
+                    </div>
+                    
+                    @if (Model.Security.RateLimit.Enabled)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Requests por Minuto</label>
+                            <InputNumber @bind-Value="Model.Security.RateLimit.RequestsPerMinute" class="form-control" min="1" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Requests por Hora</label>
+                            <InputNumber @bind-Value="Model.Security.RateLimit.RequestsPerHour" class="form-control" min="1" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Requests por Dia</label>
+                            <InputNumber @bind-Value="Model.Security.RateLimit.RequestsPerDay" class="form-control" min="1" />
+                        </div>
+                    }
+
+                    <h6 class="text-warning mt-3">CORS</h6>
+                    <div class="form-check">
+                        <InputCheckbox @bind-Value="Model.Security.Cors.Enabled" class="form-check-input" id="corsEnabled" />
+                        <label class="form-check-label" for="corsEnabled">Ativar CORS</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monitoring Configuration -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-graph-up"></i> Configuração de Monitoramento</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <h6 class="text-info">Logging</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Nível</label>
+                        <InputSelect @bind-Value="Model.Monitoring.Logging.Level" class="form-select">
+                            <option value="@LogLevel.Trace">Trace</option>
+                            <option value="@LogLevel.Debug">Debug</option>
+                            <option value="@LogLevel.Information">Information</option>
+                            <option value="@LogLevel.Warning">Warning</option>
+                            <option value="@LogLevel.Error">Error</option>
+                            <option value="@LogLevel.Critical">Critical</option>
+                        </InputSelect>
+                    </div>
+                    <div class="form-check">
+                        <InputCheckbox @bind-Value="Model.Monitoring.Logging.EnableStructuredLogging" class="form-check-input" id="structuredLogging" />
+                        <label class="form-check-label" for="structuredLogging">Logging Estruturado</label>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <h6 class="text-warning">Métricas</h6>
+                    <div class="form-check mb-3">
+                        <InputCheckbox @bind-Value="Model.Monitoring.Metrics.Enabled" class="form-check-input" id="metricsEnabled" />
+                        <label class="form-check-label" for="metricsEnabled">Ativar Métricas</label>
+                    </div>
+                    @if (Model.Monitoring.Metrics.Enabled)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Provider</label>
+                            <InputText @bind-Value="Model.Monitoring.Metrics.Provider" class="form-control" placeholder="Prometheus" />
+                        </div>
+                    }
+                </div>
+
+                <div class="col-md-3">
+                    <h6 class="text-success">Tracing</h6>
+                    <div class="form-check mb-3">
+                        <InputCheckbox @bind-Value="Model.Monitoring.Tracing.Enabled" class="form-check-input" id="tracingEnabled" />
+                        <label class="form-check-label" for="tracingEnabled">Ativar Tracing</label>
+                    </div>
+                    @if (Model.Monitoring.Tracing.Enabled)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Taxa de Amostragem</label>
+                            <InputNumber @bind-Value="Model.Monitoring.Tracing.SamplingRate" class="form-control" min="0" max="1" step="0.1" />
+                        </div>
+                    }
+                </div>
+
+                <div class="col-md-3">
+                    <h6 class="text-danger">Auditoria</h6>
+                    <div class="form-check mb-3">
+                        <InputCheckbox @bind-Value="Model.Monitoring.Audit.Enabled" class="form-check-input" id="auditEnabled" />
+                        <label class="form-check-label" for="auditEnabled">Ativar Auditoria</label>
+                    </div>
+                    @if (Model.Monitoring.Audit.Enabled)
+                    {
+                        <div class="form-check">
+                            <InputCheckbox @bind-Value="Model.Monitoring.Audit.AuditRequests" class="form-check-input" id="auditRequests" />
+                            <label class="form-check-label" for="auditRequests">Auditar Requests</label>
+                        </div>
+                        <div class="form-check">
+                            <InputCheckbox @bind-Value="Model.Monitoring.Audit.AuditDataChanges" class="form-check-input" id="auditDataChanges" />
+                            <label class="form-check-label" for="auditDataChanges">Auditar Mudanças</label>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary" @onclick="OnCancel">
+            <i class="bi bi-x-circle"></i> Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Salvar
+        </button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public ApiInterfaceCreateRequest Model { get; set; } = new();
+    [Parameter] public EventCallback OnSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task HandleSubmit()
+    {
+        await OnSubmit.InvokeAsync();
+    }
+
+    private void UpdateTags(string? tagString)
+    {
+        if (string.IsNullOrWhiteSpace(tagString))
+        {
+            Model.Tags.Clear();
+            return;
+        }
+
+        Model.Tags = tagString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(tag => tag.Trim())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .ToList();
+    }
+}

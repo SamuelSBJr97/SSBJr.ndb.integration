@@ -1,0 +1,348 @@
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+    @foreach (var notification in notifications.TakeLast(5))
+    {
+        <div class="toast show @GetToastClass(notification.Type)" role="alert">
+            <div class="toast-header">
+                <i class="bi @GetIconClass(notification.Type) me-2"></i>
+                <strong class="me-auto">@notification.Title</strong>
+                <small class="text-muted">@notification.Timestamp.ToString("HH:mm:ss")</small>
+                <button type="button" class="btn-close" @onclick="() => RemoveNotification(notification.Id)"></button>
+            </div>
+            <div class="toast-body">
+                @notification.Message
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Notification Bell -->
+<div class="position-fixed bottom-0 end-0 p-3">
+    <button class="btn btn-primary rounded-circle position-relative" style="width: 60px; height: 60px;" 
+            @onclick="ToggleNotificationPanel" title="Notificações">
+        <i class="bi bi-bell fs-4"></i>
+        @if (unreadCount > 0)
+        {
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                @unreadCount
+                <span class="visually-hidden">notificações não lidas</span>
+            </span>
+        }
+    </button>
+</div>
+
+<!-- Notification Panel -->
+@if (showNotificationPanel)
+{
+    <div class="position-fixed bottom-0 end-0 me-3 mb-5" style="width: 350px; max-height: 500px; z-index: 1040;">
+        <div class="card shadow-lg">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="bi bi-bell"></i> Notificações
+                </h6>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary me-2" @onclick="ClearAllNotifications">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleNotificationPanel">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+                @if (!notifications.Any())
+                {
+                    <div class="text-center p-4 text-muted">
+                        <i class="bi bi-bell-slash fs-1"></i>
+                        <p class="mt-2">Nenhuma notificação</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var notification in notifications.OrderByDescending(n => n.Timestamp))
+                    {
+                        <div class="list-group-item list-group-item-action @(notification.IsRead ? "" : "bg-light")" 
+                             @onclick="() => MarkAsRead(notification.Id)">
+                            <div class="d-flex w-100 justify-content-between">
+                                <div class="d-flex">
+                                    <i class="bi @GetIconClass(notification.Type) me-2 @GetTextColorClass(notification.Type)"></i>
+                                    <div>
+                                        <h6 class="mb-1">@notification.Title</h6>
+                                        <p class="mb-1 small">@notification.Message</p>
+                                        <small class="text-muted">@FormatTimestamp(notification.Timestamp)</small>
+                                    </div>
+                                </div>
+                                @if (!notification.IsRead)
+                                {
+                                    <span class="badge bg-primary rounded-pill">New</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private HubConnection? hubConnection;
+    private List<NotificationModel> notifications = new();
+    private bool showNotificationPanel = false;
+    private int unreadCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl("/notifications")
+            .Build();
+
+        hubConnection.On<string, string, string>("ReceiveNotification", (title, message, type) =>
+        {
+            var notification = new NotificationModel
+            {
+                Id = Guid.NewGuid(),
+                Title = title,
+                Message = message,
+                Type = Enum.Parse<NotificationType>(type),
+                Timestamp = DateTime.Now,
+                IsRead = false
+            };
+
+            notifications.Add(notification);
+            unreadCount++;
+            
+            InvokeAsync(StateHasChanged);
+            InvokeAsync(() => ShowToastNotification(notification));
+        });
+
+        hubConnection.On<string>("ApiStatusChanged", (apiData) =>
+        {
+            var notification = new NotificationModel
+            {
+                Id = Guid.NewGuid(),
+                Title = "Status da API Alterado",
+                Message = apiData,
+                Type = NotificationType.Info,
+                Timestamp = DateTime.Now,
+                IsRead = false
+            };
+
+            notifications.Add(notification);
+            unreadCount++;
+            
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<string>("DeploymentCompleted", (apiName) =>
+        {
+            var notification = new NotificationModel
+            {
+                Id = Guid.NewGuid(),
+                Title = "Deploy Concluído",
+                Message = $"A API '{apiName}' foi implantada com sucesso!",
+                Type = NotificationType.Success,
+                Timestamp = DateTime.Now,
+                IsRead = false
+            };
+
+            notifications.Add(notification);
+            unreadCount++;
+            
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<string>("DeploymentFailed", (apiName) =>
+        {
+            var notification = new NotificationModel
+            {
+                Id = Guid.NewGuid(),
+                Title = "Falha no Deploy",
+                Message = $"Erro ao implantar a API '{apiName}'. Verifique os logs.",
+                Type = NotificationType.Error,
+                Timestamp = DateTime.Now,
+                IsRead = false
+            };
+
+            notifications.Add(notification);
+            unreadCount++;
+            
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+
+        // Add some demo notifications
+        await AddDemoNotifications();
+    }
+
+    private async Task AddDemoNotifications()
+    {
+        await Task.Delay(1000);
+        
+        notifications.AddRange(new[]
+        {
+            new NotificationModel
+            {
+                Id = Guid.NewGuid(),
+                Title = "Sistema Iniciado",
+                Message = "O sistema de gerenciamento de APIs foi inicializado com sucesso.",
+                Type = NotificationType.Success,
+                Timestamp = DateTime.Now.AddMinutes(-5),
+                IsRead = true
+            },
+            new NotificationModel
+            {
+                Id = Guid.NewGuid(),
+                Title = "Nova API Criada",
+                Message = "A API 'Demo GraphQL API' foi criada e está pronta para deploy.",
+                Type = NotificationType.Info,
+                Timestamp = DateTime.Now.AddMinutes(-2),
+                IsRead = false
+            }
+        });
+
+        unreadCount = notifications.Count(n => !n.IsRead);
+        StateHasChanged();
+    }
+
+    private async Task ShowToastNotification(NotificationModel notification)
+    {
+        // Auto-hide toast after 5 seconds
+        await Task.Delay(5000);
+        RemoveNotification(notification.Id);
+    }
+
+    private void ToggleNotificationPanel()
+    {
+        showNotificationPanel = !showNotificationPanel;
+    }
+
+    private void RemoveNotification(Guid id)
+    {
+        var notification = notifications.FirstOrDefault(n => n.Id == id);
+        if (notification != null)
+        {
+            notifications.Remove(notification);
+            if (!notification.IsRead)
+            {
+                unreadCount--;
+            }
+            StateHasChanged();
+        }
+    }
+
+    private void MarkAsRead(Guid id)
+    {
+        var notification = notifications.FirstOrDefault(n => n.Id == id);
+        if (notification != null && !notification.IsRead)
+        {
+            notification.IsRead = true;
+            unreadCount--;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearAllNotifications()
+    {
+        notifications.Clear();
+        unreadCount = 0;
+        StateHasChanged();
+    }
+
+    private string GetToastClass(NotificationType type) => type switch
+    {
+        NotificationType.Success => "border-success",
+        NotificationType.Warning => "border-warning",
+        NotificationType.Error => "border-danger",
+        NotificationType.Info => "border-info",
+        _ => "border-secondary"
+    };
+
+    private string GetIconClass(NotificationType type) => type switch
+    {
+        NotificationType.Success => "bi-check-circle-fill",
+        NotificationType.Warning => "bi-exclamation-triangle-fill",
+        NotificationType.Error => "bi-x-circle-fill",
+        NotificationType.Info => "bi-info-circle-fill",
+        _ => "bi-bell-fill"
+    };
+
+    private string GetTextColorClass(NotificationType type) => type switch
+    {
+        NotificationType.Success => "text-success",
+        NotificationType.Warning => "text-warning",
+        NotificationType.Error => "text-danger",
+        NotificationType.Info => "text-info",
+        _ => "text-secondary"
+    };
+
+    private string FormatTimestamp(DateTime timestamp)
+    {
+        var diff = DateTime.Now - timestamp;
+        return diff.TotalMinutes < 1 ? "Agora mesmo" :
+               diff.TotalMinutes < 60 ? $"{(int)diff.TotalMinutes}m atrás" :
+               diff.TotalHours < 24 ? $"{(int)diff.TotalHours}h atrás" :
+               timestamp.ToString("dd/MM HH:mm");
+    }
+
+    // Send notification methods for testing
+    public async Task SendTestNotification()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("SendNotification", "Teste", "Esta é uma notificação de teste", "Info");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+    public class NotificationModel
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public NotificationType Type { get; set; }
+        public DateTime Timestamp { get; set; }
+        public bool IsRead { get; set; }
+    }
+
+    public enum NotificationType
+    {
+        Info,
+        Success,
+        Warning,
+        Error
+    }
+}
+
+<style>
+    .toast {
+        margin-bottom: 0.5rem;
+        opacity: 1;
+    }
+
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+        border-radius: 0;
+    }
+
+    .list-group-item:first-child {
+        border-top: none;
+    }
+
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+</style>

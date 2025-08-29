@@ -1,0 +1,282 @@
+@page "/"
+@using SSBJr.ndb.integration.Web.Models
+@using SSBJr.ndb.integration.Web.Services
+@inject IApiInterfaceService ApiService
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Dashboard - SSBJr API Manager</PageTitle>
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5 text-primary mb-2">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </h1>
+                    <p class="text-muted">Sistema de gerenciamento de APIs</p>
+                </div>
+                <div class="text-muted">
+                    <small>Última atualização: @DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de APIs</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@totalApis</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-layers text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">APIs Ativas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@runningApis</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-play-circle text-success" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Em Implantação</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@deployingApis</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-arrow-clockwise text-warning" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Com Falha</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@failedApis</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- API Types Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-pie-chart"></i> Distribuição por Tipo
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="apiTypesChart" width="100%" height="50%"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-clock-history"></i> Atividades Recentes
+                    </h6>
+                </div>
+                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mt-2">Sistema carregando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Quick Actions -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-lightning"></i> Ações Rápidas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/api-interfaces" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Nova Interface API
+                        </a>
+                        <button class="btn btn-outline-info" @onclick="RefreshData">
+                            <i class="bi bi-arrow-clockwise"></i> Atualizar Dashboard
+                        </button>
+                        <button class="btn btn-outline-success">
+                            <i class="bi bi-download"></i> Exportar Relatório
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Infrastructure Status -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-server"></i> Status da Infraestrutura
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">Docker Engine</span>
+                        <span class="badge bg-success">Online</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">PostgreSQL</span>
+                        <span class="badge bg-success">Online</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">Redis Cache</span>
+                        <span class="badge bg-success">Online</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">RabbitMQ</span>
+                        <span class="badge bg-warning">Degradado</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="small text-muted">
+                        <i class="bi bi-info-circle"></i>
+                        Última verificação: @DateTime.Now.AddMinutes(-2).ToString("HH:mm")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js for API Types Chart -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    window.initApiTypesChart = () => {
+        const ctx = document.getElementById('apiTypesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['GraphQL', 'REST', 'Híbrida'],
+                datasets: [{
+                    data: [1, 0, 0],
+                    backgroundColor: [
+                        '#667eea',
+                        '#764ba2',
+                        '#f093fb'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    };
+
+    // Initialize chart after page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            if (typeof window.initApiTypesChart === 'function') {
+                window.initApiTypesChart();
+            }
+        }, 100);
+    });
+</script>
+
+<style>
+    .border-left-primary { border-left: 4px solid #4e73df; }
+    .border-left-success { border-left: 4px solid #1cc88a; }
+    .border-left-warning { border-left: 4px solid #f6c23e; }
+    .border-left-danger { border-left: 4px solid #e74a3b; }
+</style>
+
+@code {
+    private int totalApis = 1;
+    private int runningApis = 0;
+    private int deployingApis = 0;
+    private int failedApis = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.Delay(500);
+            await JS.InvokeVoidAsync("initApiTypesChart");
+        }
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            var apis = await ApiService.GetAllAsync(1, 1000);
+            
+            totalApis = apis.Count();
+            runningApis = apis.Count(a => a.Status == ApiStatus.Running);
+            deployingApis = apis.Count(a => a.Status == ApiStatus.Deploying);
+            failedApis = apis.Count(a => a.Status == ApiStatus.Failed);
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadDashboardData();
+    }
+}

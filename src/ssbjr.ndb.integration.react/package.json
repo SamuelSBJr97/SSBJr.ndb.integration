@@ -8,8 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "generate-client": "swagger-codegen-cli generate -i http://localhost:8080/swagger/v1/swagger.json -l typescript-axios -o src/api/generated",
-    "postinstall": "npm run generate-client || echo 'API client generation skipped'"
+    "generate-client": "swagger-codegen-cli generate -i http://localhost:8080/swagger/v1/swagger.json -l typescript-axios -o src/api/generated"
   },
   "dependencies": {
     "react": "^19.1.1",

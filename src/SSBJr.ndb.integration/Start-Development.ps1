@@ -1,8 +1,15 @@
 # Script para iniciar todos os serviços
 param(
     [switch]$SkipReact,
-    [switch]$DevMode
+    [switch]$DevMode,
+    [switch]$ReactOnly
 )
+
+if ($ReactOnly) {
+    Write-Host "?? Iniciando apenas o React App..." -ForegroundColor Green
+    .\Run-React.ps1
+    exit
+}
 
 Write-Host "?? Iniciando SSBJr API Manager..." -ForegroundColor Green
 
@@ -50,7 +57,8 @@ if (-not $SkipReact) {
         Write-Host "? Node.js e npm encontrados" -ForegroundColor Green
     }
     catch {
-        Write-Host "??  Node.js não encontrado. React app será pulado." -ForegroundColor Yellow
+        Write-Host "??  Node.js não encontrado. React app será executado separadamente." -ForegroundColor Yellow
+        Write-Host "?? Para executar React: .\Run-React.ps1" -ForegroundColor Cyan
         $SkipReact = $true
     }
 }
@@ -92,70 +100,29 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "? Build concluído com sucesso!" -ForegroundColor Green
 
-# Preparar React app se necessário
-if (-not $SkipReact) {
-    Write-Host "?? Preparando React app..." -ForegroundColor Yellow
-    
-    Push-Location "SSBJr.ndb.integration.React"
-    try {
-        # Instalar dependências se necessário
-        if (-not (Test-Path "node_modules")) {
-            Write-Host "Instalando dependências do React..." -ForegroundColor Cyan
-            npm install
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "? Falha ao instalar dependências do React" -ForegroundColor Red
-                $SkipReact = $true
-            }
-        }
-        
-        # Build do React app se não for modo dev
-        if (-not $DevMode -and -not $SkipReact) {
-            Write-Host "Construindo React app..." -ForegroundColor Cyan
-            npm run build
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "? Falha ao construir React app" -ForegroundColor Red
-                $SkipReact = $true
-            }
-        }
-    }
-    finally {
-        Pop-Location
-    }
+# Iniciar React em paralelo se solicitado
+if ($DevMode -and -not $SkipReact) {
+    Write-Host "?? Iniciando React em modo paralelo..." -ForegroundColor Yellow
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", ".\Run-React.ps1"
+    Start-Sleep -Seconds 2
 }
 
 # Iniciar aplicação
-Write-Host "?? Iniciando aplicação..." -ForegroundColor Green
-
-if ($DevMode) {
-    Write-Host "?? Modo de desenvolvimento ativado" -ForegroundColor Yellow
-    
-    # Iniciar React em modo dev em paralelo se não for para pular
-    if (-not $SkipReact) {
-        Write-Host "Iniciando React em modo dev..." -ForegroundColor Cyan
-        Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'SSBJr.ndb.integration.React'; npm run dev"
-    }
-    
-    # Aguardar um pouco antes de iniciar o AppHost
-    Start-Sleep -Seconds 3
-}
-
-Write-Host "Iniciando Aspire AppHost..." -ForegroundColor Cyan
+Write-Host "?? Iniciando Aspire AppHost..." -ForegroundColor Green
 Write-Host ""
 Write-Host "?? URLs esperadas:" -ForegroundColor Yellow
 Write-Host "  - Dashboard Aspire: https://localhost:15888" -ForegroundColor Cyan
-Write-Host "  - Blazor App: https://localhost:7080" -ForegroundColor Cyan
+Write-Host "  - Blazor Web App: https://localhost:7080" -ForegroundColor Cyan
 Write-Host "  - API Service: https://localhost:8080" -ForegroundColor Cyan
-if (-not $SkipReact) {
-    if ($DevMode) {
-        Write-Host "  - React App (dev): http://localhost:5173" -ForegroundColor Cyan
-    } else {
-        Write-Host "  - React App: http://localhost:3000" -ForegroundColor Cyan
-    }
+if ($DevMode -and -not $SkipReact) {
+    Write-Host "  - React App (paralelo): http://localhost:3000" -ForegroundColor Cyan
 }
 Write-Host ""
 Write-Host "?? Credenciais de demo:" -ForegroundColor Yellow
 Write-Host "  - Usuário: admin" -ForegroundColor Cyan
 Write-Host "  - Senha: admin123" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "?? Para executar React separadamente: .\Run-React.ps1" -ForegroundColor Cyan
 Write-Host ""
 
 # Executar AppHost

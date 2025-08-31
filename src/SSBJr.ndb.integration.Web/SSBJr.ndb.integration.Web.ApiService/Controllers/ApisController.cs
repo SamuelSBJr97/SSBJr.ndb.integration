@@ -26,7 +26,7 @@ public class ApisController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ApiDefinition), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<ApiDefinition>> CreateApi([FromBody] ApiDeploymentRequest request)
+    public async Task<ActionResult<ApiDefinition>> CreateApi([FromBody] ApiInterfaceCreateRequest request)
     {
         try
         {

@@ -77,6 +77,13 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseCors(policy =>
+{
+    policy.AllowAnyOrigin()
+          .AllowAnyMethod()
+          .AllowAnyHeader();
+});
+
 app.UseExceptionHandler();
 
 // Enable Swagger in all environments
@@ -87,9 +94,6 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
-app.UseCors("AllowAll");
-
-// Use routing and controllers
 app.UseRouting();
 
 // Map Controllers

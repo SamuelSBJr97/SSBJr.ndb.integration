@@ -10,16 +10,19 @@ var postgres = builder.AddPostgres("postgres")
 
 // Configurar o serviço de API
 var apiService = builder.AddProject<Projects.SSBJr_ndb_integration_Web_ApiService>("apiservice")
-    .WithHttpHealthCheck("/health")
+    .WithHttpHealthCheck("/api/health")
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName)
     .WithReference(cache)
     .WithReference(postgres)
     .WaitFor(cache)
     .WaitFor(postgres);
 
-// Frontend Blazor Standalone
+// Frontend Blazor WebAssembly
 var blazorApp = builder.AddProject<Projects.SSBJr_ndb_integration_Blazor>("blazorapp")
-    .WithHttpHealthCheck("/health")
+    .WithHttpHealthCheck("/")
+    .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName)
+    // Configurar a URL do API service para o Blazor WebAssembly
+    .WithEnvironment("ApiService__BaseUrl", apiService.GetEndpoint("https"))
     .WithReference(apiService)
     .WaitFor(apiService);
 

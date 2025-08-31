@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace SSBJr.ndb.integration.Web.ApiService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/interfaces")]
 [Produces("application/json")]
 public class InterfacesController : ControllerBase
 {
@@ -77,23 +77,12 @@ public class InterfacesController : ControllerBase
     {
         try
         {
-            // Convert from Blazor request format to ApiDeploymentRequest
-            var deploymentRequest = new ApiDeploymentRequest
-            {
-                Name = request.GetProperty("name").GetString() ?? "",
-                Description = request.GetProperty("description").GetString() ?? "",
-                SwaggerJson = request.TryGetProperty("swaggerJson", out var swagger) ? swagger.GetString() ?? "" : "",
-                Configuration = new Dictionary<string, object>()
-            };
-
-            if (string.IsNullOrWhiteSpace(deploymentRequest.Name))
+            var createRequest = JsonSerializer.Deserialize<ApiInterfaceCreateRequest>(request.GetRawText());
+            if (createRequest == null || string.IsNullOrWhiteSpace(createRequest.Name))
             {
                 return BadRequest(new { Error = "Nome é obrigatório" });
             }
-
-            var api = await _apiManagerService.CreateApiAsync(deploymentRequest);
-            
-            // Convert back to interface format
+            var api = await _apiManagerService.CreateApiAsync(createRequest);
             var result = new
             {
                 id = api.Id,
@@ -107,7 +96,6 @@ public class InterfacesController : ControllerBase
                 tags = new List<string>(),
                 createdAt = api.CreatedAt
             };
-
             return CreatedAtAction(nameof(GetInterface), new { id = api.Id }, result);
         }
         catch (ArgumentException ex)
@@ -250,8 +238,6 @@ public class InterfacesController : ControllerBase
     /// <param name="id">ID da interface</param>
     /// <returns>Resultado da operação</returns>
     [HttpPost("{id:guid}/deploy")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeployInterface(Guid id)
     {
         try
@@ -278,8 +264,6 @@ public class InterfacesController : ControllerBase
     /// <param name="id">ID da interface</param>
     /// <returns>Resultado da operação</returns>
     [HttpPost("{id:guid}/stop")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> StopInterface(Guid id)
     {
         try
@@ -306,8 +290,6 @@ public class InterfacesController : ControllerBase
     /// <param name="id">ID da interface</param>
     /// <returns>Resultado da operação</returns>
     [HttpPost("{id:guid}/restart")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> RestartInterface(Guid id)
     {
         try
@@ -382,8 +364,6 @@ public class InterfacesController : ControllerBase
     /// <param name="id">ID da interface</param>
     /// <returns>Métricas da interface</returns>
     [HttpGet("{id:guid}/metrics")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetInterfaceMetrics(Guid id)
     {
         try
@@ -425,8 +405,6 @@ public class InterfacesController : ControllerBase
     /// <param name="lines">Número de linhas de log</param>
     /// <returns>Logs da interface</returns>
     [HttpGet("{id:guid}/logs")]
-    [ProducesResponseType(typeof(List<string>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<string>>> GetInterfaceLogs(Guid id, [FromQuery] int lines = 100)
     {
         try

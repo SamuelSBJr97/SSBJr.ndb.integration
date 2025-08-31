@@ -414,13 +414,13 @@ public class UpdateApiInterfaceRequest
 }
 
 // Additional models for MAUI UI
-public class InfrastructureTemplate
+public partial class InfrastructureTemplate
 {
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Icon { get; set; } = string.Empty;
-    public InfrastructureConfig Configuration { get; set; } = new();
     public bool IsRecommended { get; set; }
+    public InfrastructureConfig Configuration { get; set; } = new();
 }
 
 public class SystemHealth

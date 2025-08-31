@@ -19,8 +19,8 @@ namespace SSBJr.ndb.integration
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
-            // Configure HTTP Client with service discovery support
-            var apiBaseUrl = "https://localhost:8080/"; // Fallback for local development
+            // Configure HTTP Client with service discovery support for Aspire/Docker
+            var apiBaseUrl = GetApiServiceUrl();
 
             builder.Services.AddSingleton<HttpClient>(provider =>
             {
@@ -69,6 +69,22 @@ namespace SSBJr.ndb.integration
 #endif
 
             return builder.Build();
+        }
+
+        private static string GetApiServiceUrl()
+        {
+            // 1. Aspire: Environment variable
+            var aspireUrl = Environment.GetEnvironmentVariable("ApiService__BaseUrl");
+            if (!string.IsNullOrEmpty(aspireUrl))
+                return aspireUrl;
+
+            // 2. Local config (appsettings, etc.)
+            var configUrl = Environment.GetEnvironmentVariable("ApiService_BaseUrl");
+            if (!string.IsNullOrEmpty(configUrl))
+                return configUrl;
+
+            // 3. Fallback for Docker Compose/Aspire dev
+            return "https://localhost:7080/";
         }
     }
 }

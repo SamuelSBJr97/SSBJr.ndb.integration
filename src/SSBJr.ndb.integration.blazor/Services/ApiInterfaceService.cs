@@ -141,7 +141,7 @@ public class ApiInterfaceService : IApiInterfaceService
     {
         try
         {
-            var response = await _httpClient.DeleteAsync($"/api/apis/{id}");
+            var response = await _httpClient.DeleteAsync($"/api/interfaces/{id}");
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -155,7 +155,7 @@ public class ApiInterfaceService : IApiInterfaceService
     {
         try
         {
-            var response = await _httpClient.PostAsync($"/api/apis/{id}/start", null);
+            var response = await _httpClient.PostAsync($"/api/interfaces/{id}/deploy", null);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -169,7 +169,7 @@ public class ApiInterfaceService : IApiInterfaceService
     {
         try
         {
-            var response = await _httpClient.PostAsync($"/api/apis/{id}/stop", null);
+            var response = await _httpClient.PostAsync($"/api/interfaces/{id}/stop", null);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -183,9 +183,8 @@ public class ApiInterfaceService : IApiInterfaceService
     {
         try
         {
-            // For restart, we'll stop and then start
             await StopAsync(id);
-            await Task.Delay(1000); // Brief delay
+            await Task.Delay(1000);
             return await DeployAsync(id);
         }
         catch (Exception ex)
@@ -219,7 +218,7 @@ public class ApiInterfaceService : IApiInterfaceService
     {
         try
         {
-            var response = await _httpClient.GetAsync($"/api/apis/{id}/health");
+            var response = await _httpClient.GetAsync($"/api/interfaces/{id}/metrics");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
@@ -260,42 +259,165 @@ public class ApiInterfaceService : IApiInterfaceService
     {
         try
         {
-            var response = await _httpClient.GetAsync("/api/services");
-            if (response.IsSuccessStatusCode)
+            const string endpoint = "/api/interfaces";
+            _logger.LogInformation("Calling {Endpoint} from {BaseAddress}", endpoint, _httpClient.BaseAddress);
+            var response = await _httpClient.GetAsync(endpoint);
+            var contentType = response.Content.Headers.ContentType?.MediaType;
+            var responseContent = await response.Content.ReadAsStringAsync();
+            _logger.LogDebug("Interfaces response status: {Status} content-type: {ContentType}", response.StatusCode, contentType);
+
+            if (response.IsSuccessStatusCode && contentType == "application/json")
             {
-                var json = await response.Content.ReadAsStringAsync();
-                var apis = JsonSerializer.Deserialize<List<ApiDefinition>>(json, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                }) ?? new List<ApiDefinition>();
-
-                // Convert ApiDefinition to ServiceDefinition
-                var services = apis.Select(api => new ServiceDefinition
-                {
-                    Id = api.Id,
-                    Name = api.Name,
-                    Description = api.Description,
-                    ServiceType = "REST",
-                    Version = "1.0.0",
-                    Status = api.Status.ToString(),
-                    Endpoint = api.BaseUrl,
-                    Configuration = api.Metadata,
-                    Tags = new List<string>(),
-                    CreatedAt = api.CreatedAt,
-                    LastHealthCheck = api.LastHealthCheck,
-                    IsHealthy = api.Status == ApiStatus.Running
-                }).ToList();
-
-                return services;
+                return ParseServicesJson(responseContent);
             }
 
-            _logger.LogWarning("Failed to get services. Status: {StatusCode}", response.StatusCode);
-            return new List<ServiceDefinition>();
+            _logger.LogWarning("Endpoint {Endpoint} returned {Status} ({ContentType}). Falling back to mock.", endpoint, response.StatusCode, contentType);
+            return GetMockServices();
+        }
+        catch (HttpRequestException httpEx)
+        {
+            _logger.LogError(httpEx, "HTTP request failed calling interfaces endpoint. BaseAddress: {BaseAddress}", _httpClient.BaseAddress);
+            return GetMockServices();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting all services");
-            return new List<ServiceDefinition>();
+            _logger.LogError(ex, "Unexpected error getting interfaces");
+            return GetMockServices();
         }
+    }
+
+    private IEnumerable<ServiceDefinition> ParseServicesJson(string json)
+    {
+        try
+        {
+            var jsonDocument = JsonDocument.Parse(json);
+            var services = new List<ServiceDefinition>();
+
+            if (jsonDocument.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var element in jsonDocument.RootElement.EnumerateArray())
+                {
+                    try
+                    {
+                        var service = new ServiceDefinition
+                        {
+                            Id = element.TryGetProperty("id", out var idProp) && Guid.TryParse(idProp.GetString(), out var guid) ? guid : Guid.NewGuid(),
+                            Name = element.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "",
+                            Description = element.TryGetProperty("description", out var descProp) ? descProp.GetString() ?? "" : "",
+                            ServiceType = "REST",
+                            Version = "1.0.0",
+                            Status = MapApiStatusToString(element.TryGetProperty("status", out var statusProp) ? statusProp.GetString() ?? "" : ""),
+                            Endpoint = element.TryGetProperty("baseUrl", out var urlProp) ? urlProp.GetString() ?? "" : "",
+                            Configuration = element.TryGetProperty("metadata", out var metaProp) ? ParseMetadata(metaProp) : new Dictionary<string, object>(),
+                            Tags = new List<string>(),
+                            CreatedAt = element.TryGetProperty("createdAt", out var createdProp) && DateTime.TryParse(createdProp.GetString(), out var created) ? created : DateTime.Now,
+                            LastHealthCheck = element.TryGetProperty("lastHealthCheck", out var healthProp) && DateTime.TryParse(healthProp.GetString(), out var health) ? health : null,
+                            IsHealthy = MapStatusToHealthy(element.TryGetProperty("status", out var statusProp2) ? statusProp2.GetString() ?? "" : "")
+                        };
+
+                        services.Add(service);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error parsing individual service from JSON");
+                    }
+                }
+            }
+
+            return services;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error parsing services JSON");
+            return GetMockServices();
+        }
+    }
+
+    private IEnumerable<ServiceDefinition> GetMockServices()
+    {
+        return new List<ServiceDefinition>
+        {
+            new ServiceDefinition
+            {
+                Id = Guid.NewGuid(),
+                Name = "Petstore API (Mock)",
+                Description = "API de exemplo para demonstração",
+                ServiceType = "REST",
+                Version = "1.0.0",
+                Status = "Running",
+                Endpoint = "https://petstore.swagger.io/v2",
+                Configuration = new Dictionary<string, object>
+                {
+                    ["source"] = "mock",
+                    ["environment"] = "development"
+                },
+                Tags = new List<string> { "demo", "petstore", "mock" },
+                CreatedAt = DateTime.Now.AddDays(-1),
+                LastHealthCheck = DateTime.Now.AddMinutes(-5),
+                IsHealthy = true
+            },
+            new ServiceDefinition
+            {
+                Id = Guid.NewGuid(),
+                Name = "JSON Placeholder API (Mock)",
+                Description = "API fake para testes e prototipagem",
+                ServiceType = "REST", 
+                Version = "1.0.0",
+                Status = "Running",
+                Endpoint = "https://jsonplaceholder.typicode.com",
+                Configuration = new Dictionary<string, object>
+                {
+                    ["source"] = "mock",
+                    ["environment"] = "development"
+                },
+                Tags = new List<string> { "demo", "fake", "mock" },
+                CreatedAt = DateTime.Now.AddHours(-6),
+                LastHealthCheck = DateTime.Now.AddMinutes(-2),
+                IsHealthy = true
+            }
+        };
+    }
+
+    private Dictionary<string, object> ParseMetadata(JsonElement metadataElement)
+    {
+        var metadata = new Dictionary<string, object>();
+        try
+        {
+            if (metadataElement.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in metadataElement.EnumerateObject())
+                {
+                    metadata[property.Name] = property.Value.ToString();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error parsing metadata");
+        }
+        return metadata;
+    }
+
+    private string MapApiStatusToString(string apiStatus)
+    {
+        // Map API service status to Blazor display status
+        return apiStatus?.ToLowerInvariant() switch
+        {
+            "created" => "Draft",
+            "deploying" => "Deploying", 
+            "running" => "Running",
+            "failed" => "Failed",
+            "stopped" => "Stopped",
+            _ => apiStatus ?? "Unknown"
+        };
+    }
+
+    private bool MapStatusToHealthy(string status)
+    {
+        return status?.ToLowerInvariant() switch
+        {
+            "running" => true,
+            _ => false
+        };
     }
 }

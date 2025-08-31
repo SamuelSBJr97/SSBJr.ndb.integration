@@ -6,7 +6,7 @@ namespace SSBJr.ndb.integration.Web.ApiService.Services;
 
 public interface IApiManagerService
 {
-    Task<ApiDefinition> CreateApiAsync(ApiDeploymentRequest request);
+    Task<ApiDefinition> CreateApiAsync(ApiInterfaceCreateRequest request);
     Task<ApiDefinition?> GetApiAsync(Guid id);
     Task<IEnumerable<ApiDefinition>> GetAllApisAsync();
     Task<bool> DeleteApiAsync(Guid id);
@@ -32,7 +32,7 @@ public class ApiManagerService : IApiManagerService
         _httpClient = httpClient;
     }
 
-    public async Task<ApiDefinition> CreateApiAsync(ApiDeploymentRequest request)
+    public async Task<ApiDefinition> CreateApiAsync(ApiInterfaceCreateRequest request)
     {
         try
         {
@@ -48,19 +48,14 @@ public class ApiManagerService : IApiManagerService
                 Status = ApiStatus.Created,
                 CreatedAt = DateTime.UtcNow,
                 BaseUrl = $"https://localhost:8080/api/proxy/{Guid.NewGuid():N}",
-                Metadata = request.Configuration
+                Metadata = request.Metadata
             };
 
             _apis[api.Id] = api;
 
             _logger.LogInformation("API {Name} created with ID {ApiId}", request.Name, api.Id);
-            
-            // Notificar criação
             await _notificationService.NotifyApiStatusChange(api.Id, "Created", "API criada com sucesso");
-
-            // Iniciar deployment em background
             _ = Task.Run(() => DeployApiAsync(api.Id));
-
             return api;
         }
         catch (Exception ex)

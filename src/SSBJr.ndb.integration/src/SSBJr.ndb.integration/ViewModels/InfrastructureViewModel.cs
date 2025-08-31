@@ -177,6 +177,14 @@ public class InfrastructureViewModel : BaseViewModel
         }
     }
 
+    public string DatabaseTypeDisplay => SelectedTemplate?.Configuration?.Database?.Type.ToString() ?? "Unknown";
+    public string MessagingTypeDisplay => SelectedTemplate?.Configuration?.Messaging?.Type.ToString() ?? "Unknown";
+    public string CacheTypeDisplay => SelectedTemplate?.Configuration?.Cache?.Type.ToString() ?? "Unknown";
+
+    public string TypeAndVersionDisplay => SelectedTemplate != null
+        ? $"Tipo: {SelectedTemplate.Configuration?.Database?.Type} | Versão: {SelectedTemplate.Configuration?.Database?.ConnectionString ?? "N/A"}"
+        : "Tipo: N/A | Versão: N/A";
+
     public async Task InitializeAsync()
     {
         try

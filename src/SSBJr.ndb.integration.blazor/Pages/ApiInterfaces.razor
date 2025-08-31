@@ -487,7 +487,8 @@
             loading = true;
             StateHasChanged();
 
-            var url = $"https://localhost:7080/api/interfaces?search={Uri.EscapeDataString(searchQuery)}";
+            // Aspire/Docker: use relative path, HttpClient is preconfigured with service discovery
+            var url = $"api/interfaces?search={Uri.EscapeDataString(searchQuery)}";
             var response = await Http.GetAsync(url);
             
             if (response.IsSuccessStatusCode)

@@ -33,22 +33,12 @@ public class BlazorCompatibilityController : ControllerBase
     {
         try
         {
-            // Extract data from Blazor request format
-            var deploymentRequest = new ApiDeploymentRequest
-            {
-                Name = GetStringProperty(request, "name") ?? "",
-                Description = GetStringProperty(request, "description") ?? "",
-                SwaggerJson = GetStringProperty(request, "swaggerJson") ?? "",
-                Configuration = ExtractConfiguration(request)
-            };
-
-            if (string.IsNullOrWhiteSpace(deploymentRequest.Name))
+            var createRequest = JsonSerializer.Deserialize<ApiInterfaceCreateRequest>(request.GetRawText());
+            if (createRequest == null || string.IsNullOrWhiteSpace(createRequest.Name))
             {
                 return BadRequest(new { Error = "Nome é obrigatório" });
             }
-
-            var api = await _apiManagerService.CreateApiAsync(deploymentRequest);
-            
+            var api = await _apiManagerService.CreateApiAsync(createRequest);
             var result = ConvertToBlazorFormat(api);
             return CreatedAtAction(nameof(GetInterface), new { id = api.Id }, result);
         }

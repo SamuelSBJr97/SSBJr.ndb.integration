@@ -19,6 +19,7 @@ public class DatabaseConfigViewModel : BaseViewModel
     private int _maxConnections = 100;
     private bool _enableMigrations = true;
     private bool _isTesting;
+    private bool _isAdvancedVisible;
     private TestResult? _testResult;
     private ApiInterface? _currentApi;
 
@@ -96,6 +97,12 @@ public class DatabaseConfigViewModel : BaseViewModel
     }
 
     public bool IsNotTesting => !IsTesting;
+
+    public bool IsAdvancedVisible
+    {
+        get => _isAdvancedVisible;
+        set => SetProperty(ref _isAdvancedVisible, value);
+    }
 
     public TestResult? TestResult
     {

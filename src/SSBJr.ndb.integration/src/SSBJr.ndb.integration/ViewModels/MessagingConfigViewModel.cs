@@ -24,6 +24,7 @@ public class MessagingConfigViewModel : BaseViewModel
     private bool _enableDeadLetterQueue = true;
     private int _maxRetries = 3;
     private bool _isTesting;
+    private bool _isAdvancedVisible;
     private TestResult? _testResult;
     private ApiInterface? _currentApi;
     private ObservableCollection<string> _topics = new();
@@ -138,6 +139,12 @@ public class MessagingConfigViewModel : BaseViewModel
     }
 
     public bool IsNotTesting => !IsTesting;
+
+    public bool IsAdvancedVisible
+    {
+        get => _isAdvancedVisible;
+        set => SetProperty(ref _isAdvancedVisible, value);
+    }
 
     public TestResult? TestResult
     {

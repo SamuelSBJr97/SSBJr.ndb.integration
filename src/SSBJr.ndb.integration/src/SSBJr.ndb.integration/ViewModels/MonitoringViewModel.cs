@@ -19,6 +19,7 @@ public class MonitoringViewModel : BaseViewModel
     private ObservableCollection<ApiStatus> _apiStatuses = new();
     private ObservableCollection<RecentActivity> _recentActivities = new();
     private bool _isRefreshing;
+    private string _name = "Monitoring";
 
     public MonitoringViewModel(
         IApiService apiService,
@@ -105,6 +106,12 @@ public class MonitoringViewModel : BaseViewModel
     {
         get => _isRefreshing;
         set => SetProperty(ref _isRefreshing, value);
+    }
+
+    public string Name
+    {
+        get => _name;
+        set => SetProperty(ref _name, value);
     }
 
     public ObservableCollection<ApiStatus> ApiStatuses

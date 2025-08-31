@@ -1,5 +1,8 @@
-namespace SSBJr.ndb.integration.Web.Models;
+using System.Collections.ObjectModel;
 
+namespace SSBJr.ndb.integration.Models;
+
+// Simplified models for MAUI (copied from Web project)
 public class ApiInterface
 {
     public Guid Id { get; set; }
@@ -73,17 +76,17 @@ public class MessagingConfig
 {
     public MessagingType Type { get; set; }
     public string ConnectionString { get; set; } = string.Empty;
-    public List<string> Topics { get; set; } = new(); // Kafka topics, Service Bus topics, etc.
-    public List<string> Queues { get; set; } = new(); // SQS queues, Service Bus queues, etc.
-    public List<string> Subscriptions { get; set; } = new(); // Event subscriptions
+    public List<string> Topics { get; set; } = new();
+    public List<string> Queues { get; set; } = new();
+    public List<string> Subscriptions { get; set; } = new();
     public bool EnableDeadLetterQueue { get; set; } = true;
     public bool EnableBatching { get; set; } = true;
     public int BatchSize { get; set; } = 100;
     public int MaxRetries { get; set; } = 3;
     public TimeSpan MessageTimeout { get; set; } = TimeSpan.FromMinutes(5);
-    public bool EnablePartitioning { get; set; } = true; // For Kafka
-    public int PartitionCount { get; set; } = 3; // For Kafka
-    public string ConsumerGroup { get; set; } = "default"; // For Kafka
+    public bool EnablePartitioning { get; set; } = true;
+    public int PartitionCount { get; set; } = 3;
+    public string ConsumerGroup { get; set; } = "default";
     public Dictionary<string, object> Options { get; set; } = new();
 }
 
@@ -97,14 +100,14 @@ public enum MessagingType
     Google_PubSub,
     NATS,
     Apache_Pulsar,
-    RabbitMQ // Mantido para compatibilidade, mas não recomendado
+    RabbitMQ
 }
 
 public class CacheConfig
 {
     public CacheType Type { get; set; }
     public string ConnectionString { get; set; } = string.Empty;
-    public int DefaultTTL { get; set; } = 3600; // seconds
+    public int DefaultTTL { get; set; } = 3600;
     public bool EnableDistributed { get; set; } = true;
     public Dictionary<string, object> Options { get; set; } = new();
 }
@@ -380,7 +383,8 @@ public class ResourceRequirements
     public string StorageRequest { get; set; } = "1Gi";
 }
 
-public class ApiInterfaceCreateRequest
+// DTOs for API communication
+public class CreateApiInterfaceRequest
 {
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
@@ -395,7 +399,7 @@ public class ApiInterfaceCreateRequest
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
-public class ApiInterfaceUpdateRequest
+public class UpdateApiInterfaceRequest
 {
     public string? Name { get; set; }
     public string? Description { get; set; }
@@ -409,26 +413,27 @@ public class ApiInterfaceUpdateRequest
     public Dictionary<string, object>? Metadata { get; set; }
 }
 
-public class ServiceDefinition
+// Additional models for MAUI UI
+public class InfrastructureTemplate
 {
-    public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public string ServiceType { get; set; } = string.Empty;
-    public string Version { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string Endpoint { get; set; } = string.Empty;
-    public Dictionary<string, object> Configuration { get; set; } = new();
-    public List<string> Tags { get; set; } = new();
-    public DateTime CreatedAt { get; set; }
-    public DateTime? LastHealthCheck { get; set; }
-    public bool IsHealthy { get; set; }
+    public string Icon { get; set; } = string.Empty;
+    public InfrastructureConfig Configuration { get; set; } = new();
+    public bool IsRecommended { get; set; }
 }
 
-public class NotificationItem
+public class SystemHealth
 {
-    public string Title { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
-    public string Type { get; set; } = string.Empty;
-    public DateTime Timestamp { get; set; }
+    public bool IsHealthy { get; set; }
+    public DateTime LastCheck { get; set; }
+    public Dictionary<string, ServiceStatus> Services { get; set; } = new();
+}
+
+public class ServiceStatus
+{
+    public bool IsHealthy { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string? ErrorMessage { get; set; }
+    public Dictionary<string, object> Details { get; set; } = new();
 }

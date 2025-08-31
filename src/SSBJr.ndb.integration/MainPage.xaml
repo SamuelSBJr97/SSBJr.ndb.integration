@@ -1,36 +1,245 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<ContentPage x:Class="SSBJr.ndb.integration.MainPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="SSBJr.ndb.integration.MainPage">
+             Title="🏠 Início"
+             Shell.BackgroundColor="{StaticResource Primary}">
 
     <ScrollView>
-        <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25">
-            <Image
-                Source="dotnet_bot.png"
-                HeightRequest="185"
-                Aspect="AspectFit"
-                SemanticProperties.Description="dot net bot in a race car number eight" />
+        <StackLayout Padding="20" Spacing="25">
 
-            <Label
-                Text="Hello, World!"
-                Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
+            <!-- Welcome Header -->
+            <Frame BackgroundColor="{StaticResource Primary}" 
+                   CornerRadius="20" 
+                   Padding="30"
+                   HasShadow="True">
+                <StackLayout>
+                    <Label Text="🚀"
+                           FontSize="64"
+                           HorizontalOptions="Center"
+                           Margin="0,0,0,10" />
+                    <Label Text="Bem-vindo ao SSBJr API Manager"
+                           FontSize="24"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           HorizontalOptions="Center" />
+                    <Label Text="Gerencie suas APIs com inteligência e simplicidade"
+                           FontSize="16"
+                           TextColor="White"
+                           Opacity="0.9"
+                           HorizontalOptions="Center"
+                           Margin="0,5,0,0" />
+                </StackLayout>
+            </Frame>
 
-            <Label
-                Text="Welcome to &#10;.NET Multi-platform App UI"
-                Style="{StaticResource SubHeadline}"
-                SemanticProperties.HeadingLevel="Level2"
-                SemanticProperties.Description="Welcome to dot net Multi platform App U I" />
+            <!-- Quick Actions -->
+            <Frame BackgroundColor="White" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True">
+                <StackLayout>
+                    <Label Text="⚡ Ações Rápidas"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}"
+                           Margin="0,0,0,20" />
 
-            <Button
-                x:Name="CounterBtn"
-                Text="Click me" 
-                SemanticProperties.Hint="Counts the number of times you click"
-                Clicked="OnCounterClicked"
-                HorizontalOptions="Fill" />
-        </VerticalStackLayout>
+                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,*" RowSpacing="15" ColumnSpacing="15">
+                        
+                        <!-- Manage APIs -->
+                        <Frame Grid.Row="0" Grid.Column="0" 
+                               BackgroundColor="{StaticResource Primary}" 
+                               CornerRadius="15" 
+                               Padding="20"
+                               HasShadow="True">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnManageApisClicked" />
+                            </Frame.GestureRecognizers>
+                            <StackLayout>
+                                <Label Text="🚀" FontSize="32" HorizontalOptions="Center" />
+                                <Label Text="Gerenciar APIs" FontSize="14" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center" />
+                                <Label Text="Criar e configurar" FontSize="12" TextColor="White" Opacity="0.8" HorizontalOptions="Center" />
+                            </StackLayout>
+                        </Frame>
+
+                        <!-- Infrastructure -->
+                        <Frame Grid.Row="0" Grid.Column="1" 
+                               BackgroundColor="{StaticResource Secondary}" 
+                               CornerRadius="15" 
+                               Padding="20"
+                               HasShadow="True">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnInfrastructureClicked" />
+                            </Frame.GestureRecognizers>
+                            <StackLayout>
+                                <Label Text="🏗️" FontSize="32" HorizontalOptions="Center" />
+                                <Label Text="Infraestrutura" FontSize="14" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center" />
+                                <Label Text="Templates e config" FontSize="12" TextColor="White" Opacity="0.8" HorizontalOptions="Center" />
+                            </StackLayout>
+                        </Frame>
+
+                        <!-- Monitoring -->
+                        <Frame Grid.Row="1" Grid.Column="0" 
+                               BackgroundColor="{StaticResource Success}" 
+                               CornerRadius="15" 
+                               Padding="20"
+                               HasShadow="True">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnMonitoringClicked" />
+                            </Frame.GestureRecognizers>
+                            <StackLayout>
+                                <Label Text="📊" FontSize="32" HorizontalOptions="Center" />
+                                <Label Text="Monitoramento" FontSize="14" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center" />
+                                <Label Text="Métricas e logs" FontSize="12" TextColor="White" Opacity="0.8" HorizontalOptions="Center" />
+                            </StackLayout>
+                        </Frame>
+
+                        <!-- Settings -->
+                        <Frame Grid.Row="1" Grid.Column="1" 
+                               BackgroundColor="{StaticResource Warning}" 
+                               CornerRadius="15" 
+                               Padding="20"
+                               HasShadow="True">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnSettingsClicked" />
+                            </Frame.GestureRecognizers>
+                            <StackLayout>
+                                <Label Text="⚙️" FontSize="32" HorizontalOptions="Center" />
+                                <Label Text="Configurações" FontSize="14" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center" />
+                                <Label Text="Personalizar app" FontSize="12" TextColor="White" Opacity="0.8" HorizontalOptions="Center" />
+                            </StackLayout>
+                        </Frame>
+                    </Grid>
+                </StackLayout>
+            </Frame>
+
+            <!-- Features Overview -->
+            <Frame BackgroundColor="White" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True">
+                <StackLayout>
+                    <Label Text="✨ Recursos Principais"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}"
+                           Margin="0,0,0,20" />
+
+                    <StackLayout Spacing="15">
+                        
+                        <StackLayout Orientation="Horizontal" Spacing="15">
+                            <Label Text="🔥" FontSize="24" VerticalOptions="Center" />
+                            <StackLayout HorizontalOptions="FillAndExpand">
+                                <Label Text="Templates de Infraestrutura Modernos"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary}" />
+                                <Label Text="Configurações pré-definidas para diferentes cenários"
+                                       FontSize="12"
+                                       TextColor="Gray" />
+                            </StackLayout>
+                        </StackLayout>
+
+                        <StackLayout Orientation="Horizontal" Spacing="15">
+                            <Label Text="📨" FontSize="24" VerticalOptions="Center" />
+                            <StackLayout HorizontalOptions="FillAndExpand">
+                                <Label Text="Mensageria de Nova Geração"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary}" />
+                                <Label Text="Kafka, NATS, Azure Service Bus e mais"
+                                       FontSize="12"
+                                       TextColor="Gray" />
+                            </StackLayout>
+                        </StackLayout>
+
+                        <StackLayout Orientation="Horizontal" Spacing="15">
+                            <Label Text="📊" FontSize="24" VerticalOptions="Center" />
+                            <StackLayout HorizontalOptions="FillAndExpand">
+                                <Label Text="Monitoramento em Tempo Real"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary}" />
+                                <Label Text="Métricas, logs e alertas automáticos"
+                                       FontSize="12"
+                                       TextColor="Gray" />
+                            </StackLayout>
+                        </StackLayout>
+
+                        <StackLayout Orientation="Horizontal" Spacing="15">
+                            <Label Text="🧪" FontSize="24" VerticalOptions="Center" />
+                            <StackLayout HorizontalOptions="FillAndExpand">
+                                <Label Text="Teste de Conectividade"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary}" />
+                                <Label Text="Validação automática de configurações"
+                                       FontSize="12"
+                                       TextColor="Gray" />
+                            </StackLayout>
+                        </StackLayout>
+
+                        <StackLayout Orientation="Horizontal" Spacing="15">
+                            <Label Text="☁️" FontSize="24" VerticalOptions="Center" />
+                            <StackLayout HorizontalOptions="FillAndExpand">
+                                <Label Text="Cloud Native Ready"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary}" />
+                                <Label Text="Suporte para AWS, Azure, Google Cloud"
+                                       FontSize="12"
+                                       TextColor="Gray" />
+                            </StackLayout>
+                        </StackLayout>
+
+                    </StackLayout>
+                </StackLayout>
+            </Frame>
+
+            <!-- Getting Started -->
+            <Frame BackgroundColor="{StaticResource Tertiary}" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True">
+                <StackLayout>
+                    <Label Text="🎯 Primeiros Passos"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}"
+                           Margin="0,0,0,15" />
+
+                    <Label Text="1. 🚀 Vá para 'APIs' para criar sua primeira API"
+                           FontSize="14"
+                           TextColor="{StaticResource Primary}"
+                           Margin="0,5" />
+
+                    <Label Text="2. 🏗️ Configure a infraestrutura usando templates"
+                           FontSize="14"
+                           TextColor="{StaticResource Primary}"
+                           Margin="0,5" />
+
+                    <Label Text="3. 📊 Monitore o desempenho em tempo real"
+                           FontSize="14"
+                           TextColor="{StaticResource Primary}"
+                           Margin="0,5" />
+
+                    <Label Text="4. ⚙️ Personalize as configurações do app"
+                           FontSize="14"
+                           TextColor="{StaticResource Primary}"
+                           Margin="0,5" />
+
+                    <Button Text="🚀 Começar Agora"
+                            BackgroundColor="{StaticResource Primary}"
+                            TextColor="White"
+                            CornerRadius="25"
+                            Padding="20,12"
+                            FontAttributes="Bold"
+                            Margin="0,20,0,0"
+                            Clicked="OnGetStartedClicked" />
+                </StackLayout>
+            </Frame>
+
+        </StackLayout>
     </ScrollView>
 
 </ContentPage>

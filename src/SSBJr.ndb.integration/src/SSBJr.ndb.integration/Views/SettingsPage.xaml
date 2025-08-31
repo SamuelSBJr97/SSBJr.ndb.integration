@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="SSBJr.ndb.integration.Views.SettingsPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:SSBJr.ndb.integration.ViewModels"
+             x:DataType="viewmodels:SettingsViewModel"
+             Title="?? Configurações"
+             Shell.BackgroundColor="{StaticResource Primary}">
+
+    <ScrollView>
+        <StackLayout Padding="20" Spacing="20">
+
+            <!-- Header -->
+            <Frame BackgroundColor="{StaticResource Primary}" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True">
+                <StackLayout>
+                    <Label Text="?? Configurações do App"
+                           FontSize="24"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           HorizontalOptions="Center" />
+                    <Label Text="Personalize o comportamento do aplicativo"
+                           FontSize="14"
+                           TextColor="White"
+                           Opacity="0.8"
+                           HorizontalOptions="Center" />
+                </StackLayout>
+            </Frame>
+
+            <!-- API Configuration -->
+            <Frame BackgroundColor="White" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True">
+                <StackLayout>
+                    <Label Text="?? Configuração da API"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}" />
+
+                    <Label Text="URL Base da API"
+                           FontSize="14"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}"
+                           Margin="0,15,0,5" />
+                    <Entry Text="{Binding ApiBaseUrl}"
+                           Placeholder="https://localhost:8080"
+                           BackgroundColor="{StaticResource Tertiary}" />
+
+                    <Label Text="Timeout (segundos)"
+                           FontSize="14"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}"
+                           Margin="0,15,0,5" />
+                    <Slider Minimum="5" Maximum="120" Value="{Binding ApiTimeout}" />
+                    <Label Text="{Binding ApiTimeout, StringFormat='Timeout: {0:F0} segundos'}"
+                           FontSize="12"
+                           TextColor="Gray" />
+
+                    <Button Text="?? Testar Conexão com API"
+                            Command="{Binding TestApiConnectionCommand}"
+                            BackgroundColor="Orange"
+                            TextColor="White"
+                            CornerRadius="8"
+                            Margin="0,15,0,0" />
+                </StackLayout>
+            </Frame>
+
+            <!-- App Behavior -->
+            <Frame BackgroundColor="White" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True">
+                <StackLayout>
+                    <Label Text="?? Comportamento do App"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}" />
+
+                    <!-- Auto Refresh -->
+                    <Grid Margin="0,15,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <Label Grid.Column="0"
+                               Text="Atualização Automática"
+                               VerticalOptions="Center" />
+                        <Switch Grid.Column="1"
+                                IsToggled="{Binding EnableAutoRefresh}" />
+                    </Grid>
+
+                    <!-- Auto Refresh Interval -->
+                    <StackLayout IsVisible="{Binding EnableAutoRefresh}">
+                        <Label Text="Intervalo de Atualização (segundos)" />
+                        <Slider Minimum="5" Maximum="300" Value="{Binding AutoRefreshInterval}" />
+                        <Label Text="{Binding AutoRefreshInterval, StringFormat='Intervalo: {0:F0} segundos'}"
+                               FontSize="12"
+                               TextColor="Gray" />
+                    </StackLayout>
+
+                    <!-- Enable Notifications -->
+                    <Grid Margin="0,15,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <Label Grid.Column="0"
+                               Text="Notificações"
+                               VerticalOptions="Center" />
+                        <Switch Grid.Column="1"
+                                IsToggled="{Binding EnableNotifications}" />
+                    </Grid>
+
+                    <!-- Dark Mode -->
+                    <Grid Margin="0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <Label Grid.Column="0"
+                               Text="Modo Escuro"
+                               VerticalOptions="Center" />
+                        <Switch Grid.Column="1"
+                                IsToggled="{Binding EnableDarkMode}" />
+                    </Grid>
+                </StackLayout>
+            </Frame>
+
+            <!-- Cache and Data -->
+            <Frame BackgroundColor="White" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True">
+                <StackLayout>
+                    <Label Text="?? Cache e Dados"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}" />
+
+                    <Label Text="Cache Local"
+                           FontSize="14"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}"
+                           Margin="0,15,0,5" />
+                    <Label Text="{Binding CacheSize}"
+                           FontSize="12"
+                           TextColor="Gray"
+                           Margin="0,0,0,10" />
+
+                    <Button Text="??? Limpar Cache"
+                            Command="{Binding ClearCacheCommand}"
+                            BackgroundColor="{StaticResource Warning}"
+                            TextColor="White"
+                            CornerRadius="8"
+                            Margin="0,5" />
+
+                    <Button Text="?? Exportar Configurações"
+                            Command="{Binding ExportSettingsCommand}"
+                            BackgroundColor="{StaticResource Secondary}"
+                            TextColor="White"
+                            CornerRadius="8"
+                            Margin="0,5" />
+
+                    <Button Text="?? Importar Configurações"
+                            Command="{Binding ImportSettingsCommand}"
+                            BackgroundColor="{StaticResource Primary}"
+                            TextColor="White"
+                            CornerRadius="8"
+                            Margin="0,5" />
+                </StackLayout>
+            </Frame>
+
+            <!-- About -->
+            <Frame BackgroundColor="White" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True">
+                <StackLayout>
+                    <Label Text="?? Sobre o App"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}" />
+
+                    <StackLayout Orientation="Horizontal" Margin="0,15,0,5">
+                        <Label Text="Versão:"
+                               FontSize="14"
+                               FontAttributes="Bold"
+                               WidthRequest="80" />
+                        <Label Text="{Binding AppVersion}"
+                               FontSize="14"
+                               TextColor="Gray" />
+                    </StackLayout>
+
+                    <StackLayout Orientation="Horizontal" Margin="0,5">
+                        <Label Text="Build:"
+                               FontSize="14"
+                               FontAttributes="Bold"
+                               WidthRequest="80" />
+                        <Label Text="{Binding AppBuild}"
+                               FontSize="14"
+                               TextColor="Gray" />
+                    </StackLayout>
+
+                    <StackLayout Orientation="Horizontal" Margin="0,5">
+                        <Label Text="Plataforma:"
+                               FontSize="14"
+                               FontAttributes="Bold"
+                               WidthRequest="80" />
+                        <Label Text="{Binding Platform}"
+                               FontSize="14"
+                               TextColor="Gray" />
+                    </StackLayout>
+
+                    <Button Text="?? Suporte"
+                            Command="{Binding ContactSupportCommand}"
+                            BackgroundColor="{StaticResource Success}"
+                            TextColor="White"
+                            CornerRadius="8"
+                            Margin="0,15,0,0" />
+                </StackLayout>
+            </Frame>
+
+            <!-- Action Buttons -->
+            <StackLayout Orientation="Horizontal" Spacing="10">
+                <Button Text="?? Salvar Todas"
+                        Command="{Binding SaveAllCommand}"
+                        BackgroundColor="Green"
+                        TextColor="White"
+                        CornerRadius="8"
+                        HorizontalOptions="FillAndExpand" />
+
+                <Button Text="?? Restaurar Padrões"
+                        Command="{Binding ResetToDefaultsCommand}"
+                        BackgroundColor="Gray"
+                        TextColor="White"
+                        CornerRadius="8"
+                        HorizontalOptions="FillAndExpand" />
+            </StackLayout>
+
+        </StackLayout>
+    </ScrollView>
+
+</ContentPage>

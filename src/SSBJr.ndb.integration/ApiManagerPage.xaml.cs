@@ -1,14 +1,13 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Text.Json;
-using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Maui.Controls;
 
 namespace SSBJr.ndb.integration;
 
 public partial class ApiManagerPage : ContentPage, INotifyPropertyChanged
 {
     private readonly HttpClient _httpClient;
-    private HubConnection? _hubConnection;
     private string _selectedSwaggerContent = string.Empty;
 
     public ObservableCollection<ApiDefinitionViewModel> Apis { get; } = new();
@@ -25,14 +24,12 @@ public partial class ApiManagerPage : ContentPage, INotifyPropertyChanged
         _ = Task.Run(async () =>
         {
             await LoadApisAsync();
-            await SetupSignalRAsync();
         });
     }
 
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        _hubConnection?.DisposeAsync();
         _httpClient?.Dispose();
     }
 
@@ -93,7 +90,7 @@ public partial class ApiManagerPage : ContentPage, INotifyPropertyChanged
         }
 
         CreateApiBtn.IsEnabled = false;
-        CreateApiBtn.Text = "? Criando...";
+        CreateApiBtn.Text = "?? Criando...";
 
         try
         {
@@ -137,7 +134,7 @@ public partial class ApiManagerPage : ContentPage, INotifyPropertyChanged
         finally
         {
             CreateApiBtn.IsEnabled = true;
-            CreateApiBtn.Text = "? Criar API";
+            CreateApiBtn.Text = "?? Criar API";
         }
     }
 
@@ -148,7 +145,7 @@ public partial class ApiManagerPage : ContentPage, INotifyPropertyChanged
 
     private async void OnApiActionClicked(object sender, EventArgs e)
     {
-        if (sender is Button button && button.CommandParameter is ApiDefinitionViewModel api)
+        if (sender is Microsoft.Maui.Controls.Button button && button.CommandParameter is ApiDefinitionViewModel api)
         {
             try
             {
@@ -165,7 +162,7 @@ public partial class ApiManagerPage : ContentPage, INotifyPropertyChanged
 
     private async void OnHealthCheckClicked(object sender, EventArgs e)
     {
-        if (sender is Button button && button.CommandParameter is ApiDefinitionViewModel api)
+        if (sender is Microsoft.Maui.Controls.Button button && button.CommandParameter is ApiDefinitionViewModel api)
         {
             try
             {
@@ -181,7 +178,7 @@ public partial class ApiManagerPage : ContentPage, INotifyPropertyChanged
 
     private async void OnDeleteClicked(object sender, EventArgs e)
     {
-        if (sender is Button button && button.CommandParameter is ApiDefinitionViewModel api)
+        if (sender is Microsoft.Maui.Controls.Button button && button.CommandParameter is ApiDefinitionViewModel api)
         {
             var result = await DisplayAlert("Confirmar", $"Deseja deletar a API '{api.Name}'?", "Sim", "Não");
             if (result)
@@ -243,57 +240,6 @@ public partial class ApiManagerPage : ContentPage, INotifyPropertyChanged
                 ShowStatus($"? Erro ao carregar APIs: {ex.Message}", Colors.Red);
                 LoadingIndicator.IsVisible = false;
                 LoadingIndicator.IsRunning = false;
-            });
-        }
-    }
-
-    private async Task SetupSignalRAsync()
-    {
-        try
-        {
-            _hubConnection = new HubConnectionBuilder()
-                .WithUrl("http://localhost:8080/notifications")
-                .Build();
-
-            _hubConnection.On<object>("ApiStatusChanged", (data) =>
-            {
-                MainThread.BeginInvokeOnMainThread(async () =>
-                {
-                    ShowStatus("?? Status da API atualizado", Colors.Blue);
-                    await LoadApisAsync();
-                });
-            });
-
-            _hubConnection.On<object>("ApiHealthCheck", (data) =>
-            {
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    var json = JsonSerializer.Serialize(data);
-                    var notification = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-                    var isHealthy = notification?["IsHealthy"]?.ToString() == "True";
-                    
-                    ShowStatus($"?? Verificação de saúde: {(isHealthy ? "Saudável" : "Com problemas")}", 
-                        isHealthy ? Colors.Green : Colors.Orange);
-                });
-            });
-
-            _hubConnection.On<object>("Error", (data) =>
-            {
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    var json = JsonSerializer.Serialize(data);
-                    var notification = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-                    ShowStatus($"? Erro: {notification?["Message"]}", Colors.Red);
-                });
-            });
-
-            await _hubConnection.StartAsync();
-        }
-        catch (Exception ex)
-        {
-            MainThread.BeginInvokeOnMainThread(() =>
-            {
-                ShowStatus($"?? Conexão com notificações falhou: {ex.Message}", Colors.Orange);
             });
         }
     }

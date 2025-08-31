@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="SSBJr.ndb.integration.Views.CacheConfigPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:SSBJr.ndb.integration.ViewModels"
+             x:DataType="viewmodels:CacheConfigViewModel"
+             Title="? Configuração de Cache"
+             Shell.BackgroundColor="{StaticResource Primary}">
+
+    <ScrollView>
+        <StackLayout Padding="20" Spacing="20">
+
+            <!-- Header -->
+            <Frame BackgroundColor="{StaticResource Primary}" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True">
+                <StackLayout>
+                    <Label Text="? Configuração de Cache"
+                           FontSize="24"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           HorizontalOptions="Center" />
+                    <Label Text="Configure sistema de cache para melhor performance"
+                           FontSize="14"
+                           TextColor="White"
+                           Opacity="0.8"
+                           HorizontalOptions="Center" />
+                </StackLayout>
+            </Frame>
+
+            <!-- Cache Type Selection -->
+            <Frame BackgroundColor="White" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True">
+                <StackLayout>
+                    <Label Text="?? Tipo de Cache"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}" />
+
+                    <Button Text="? Redis - Recomendado"
+                            Command="{Binding SelectCacheTypeCommand}"
+                            CommandParameter="Redis"
+                            BackgroundColor="#DC382D"
+                            TextColor="White"
+                            CornerRadius="8"
+                            Margin="0,10,0,5" />
+
+                    <Button Text="?? Memcached - Simples"
+                            Command="{Binding SelectCacheTypeCommand}"
+                            CommandParameter="Memcached"
+                            BackgroundColor="#FF6B35"
+                            TextColor="White"
+                            CornerRadius="8"
+                            Margin="0,5" />
+
+                    <Button Text="?? InMemory - Local"
+                            Command="{Binding SelectCacheTypeCommand}"
+                            CommandParameter="InMemory"
+                            BackgroundColor="{StaticResource Secondary}"
+                            TextColor="White"
+                            CornerRadius="8"
+                            Margin="0,5" />
+
+                    <Button Text="?? Sem Cache"
+                            Command="{Binding SelectCacheTypeCommand}"
+                            CommandParameter="None"
+                            BackgroundColor="Gray"
+                            TextColor="White"
+                            CornerRadius="8"
+                            Margin="0,5" />
+                </StackLayout>
+            </Frame>
+
+            <!-- Current Configuration -->
+            <Frame BackgroundColor="White" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True"
+                   IsVisible="{Binding SelectedType, Converter={StaticResource NotEqualsConverter}, ConverterParameter='None'}">
+                <StackLayout>
+                    <Label Text="?? Configuração Atual"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}" />
+
+                    <!-- Selected Type Display -->
+                    <Frame BackgroundColor="{StaticResource Primary}"
+                           CornerRadius="10"
+                           Padding="15"
+                           Margin="0,10,0,20">
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="{Binding SelectedTypeIcon}"
+                                   FontSize="24"
+                                   VerticalOptions="Center" />
+                            <StackLayout Margin="15,0,0,0">
+                                <Label Text="{Binding SelectedTypeName}"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="White" />
+                                <Label Text="{Binding SelectedTypeDescription}"
+                                       FontSize="12"
+                                       TextColor="White"
+                                       Opacity="0.8" />
+                            </StackLayout>
+                        </StackLayout>
+                    </Frame>
+
+                    <!-- Connection String -->
+                    <Label Text="?? String de Conexão"
+                           FontSize="14"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}"
+                           IsVisible="{Binding RequiresConnectionString}" />
+                    <Entry Text="{Binding ConnectionString}"
+                           Placeholder="Digite a string de conexão..."
+                           BackgroundColor="{StaticResource Tertiary}"
+                           Margin="0,5,0,15"
+                           IsVisible="{Binding RequiresConnectionString}" />
+
+                    <!-- Advanced Configuration -->
+                    <Expander IsExpanded="False">
+                        <Expander.Header>
+                            <Label Text="?? Configurações Avançadas"
+                                   FontSize="14"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Secondary}" />
+                        </Expander.Header>
+                        
+                        <StackLayout Padding="10,0,0,0">
+                            <!-- TTL Configuration -->
+                            <Label Text="? TTL Padrão (segundos)" />
+                            <Slider Minimum="60" Maximum="86400" Value="{Binding DefaultTTL}" />
+                            <Label Text="{Binding DefaultTTL, StringFormat='TTL: {0:F0} segundos ({1})', ConverterParameter={Binding TTLFormatted}}"
+                                   FontSize="12"
+                                   TextColor="Gray" />
+
+                            <!-- Distributed Cache -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                
+                                <Label Grid.Column="0"
+                                       Text="Cache Distribuído"
+                                       VerticalOptions="Center" />
+                                <Switch Grid.Column="1"
+                                        IsToggled="{Binding EnableDistributed}" />
+                            </Grid>
+                        </StackLayout>
+                    </Expander>
+                </StackLayout>
+            </Frame>
+
+            <!-- Test Connection -->
+            <Frame BackgroundColor="White" 
+                   CornerRadius="15" 
+                   Padding="20"
+                   HasShadow="True"
+                   IsVisible="{Binding SelectedType, Converter={StaticResource NotEqualsConverter}, ConverterParameter='None'}">
+                <StackLayout>
+                    <Label Text="?? Testar Configuração"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}" />
+
+                    <Label Text="Teste a conexão antes de salvar"
+                           FontSize="12"
+                           TextColor="Gray"
+                           Margin="0,0,0,15" />
+
+                    <Button Text="?? Testar Conexão"
+                            Command="{Binding TestConnectionCommand}"
+                            BackgroundColor="Orange"
+                            TextColor="White"
+                            CornerRadius="8"
+                            IsEnabled="{Binding IsNotTesting}" />
+
+                    <!-- Test Result -->
+                    <Frame IsVisible="{Binding HasTestResult}"
+                           BackgroundColor="{Binding TestResult.IsSuccess, Converter={StaticResource BoolToTestResultColorConverter}}"
+                           CornerRadius="8"
+                           Padding="15"
+                           Margin="0,10,0,0">
+                        <StackLayout Orientation="Horizontal">
+                            <Label Text="{Binding TestResult.IsSuccess, Converter={StaticResource BoolToEmojiConverter}}"
+                                   FontSize="20"
+                                   VerticalOptions="Center" />
+                            <StackLayout Margin="10,0,0,0">
+                                <Label Text="{Binding TestResult.Message}"
+                                       FontAttributes="Bold"
+                                       TextColor="White" />
+                                <Label Text="{Binding TestResult.Details}"
+                                       FontSize="12"
+                                       TextColor="White"
+                                       Opacity="0.8"
+                                       IsVisible="{Binding TestResult.Details, Converter={StaticResource IsNotEmptyConverter}}" />
+                            </StackLayout>
+                        </StackLayout>
+                    </Frame>
+                </StackLayout>
+            </Frame>
+
+            <!-- Action Buttons -->
+            <StackLayout Orientation="Horizontal" Spacing="10">
+                <Button Text="?? Salvar"
+                        Command="{Binding SaveConfigCommand}"
+                        BackgroundColor="Green"
+                        TextColor="White"
+                        CornerRadius="8"
+                        HorizontalOptions="FillAndExpand" />
+
+                <Button Text="? Cancelar"
+                        Command="{Binding CancelCommand}"
+                        BackgroundColor="Gray"
+                        TextColor="White"
+                        CornerRadius="8"
+                        HorizontalOptions="FillAndExpand" />
+            </StackLayout>
+
+        </StackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -372,6 +372,19 @@ auditGroup.MapGet("/statistics", async (IAuditService service) =>
     return Results.Ok(stats);
 });
 
+// Add services endpoint
+var servicesGroup = app.MapGroup("/api/services")
+    .WithTags("Services")
+    .RequireCors("ApiPolicy");
+
+servicesGroup.MapGet("/", async (IApiInterfaceService service) =>
+{
+    var services = await service.GetAllServicesAsync();
+    return Results.Ok(services);
+})
+.WithName("GetAllServices")
+.WithSummary("Get all available services");
+
 app.MapDefaultEndpoints();
 
 app.Run();

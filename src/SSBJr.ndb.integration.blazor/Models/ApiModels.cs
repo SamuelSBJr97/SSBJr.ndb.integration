@@ -1,4 +1,4 @@
-namespace SSBJr.ndb.integration.Web.Models;
+namespace SSBJr.ndb.integration.Blazor.Models;
 
 public class ApiInterface
 {
@@ -21,6 +21,8 @@ public class ApiInterface
     public Dictionary<string, object> Metadata { get; set; } = new();
     public string? ErrorMessage { get; set; }
     public DeploymentInfo? DeploymentInfo { get; set; }
+    public string? BaseUrl { get; set; }
+    public DateTime? LastHealthCheck { get; set; }
 }
 
 public enum ApiType
@@ -73,17 +75,17 @@ public class MessagingConfig
 {
     public MessagingType Type { get; set; }
     public string ConnectionString { get; set; } = string.Empty;
-    public List<string> Topics { get; set; } = new(); // Kafka topics, Service Bus topics, etc.
-    public List<string> Queues { get; set; } = new(); // SQS queues, Service Bus queues, etc.
-    public List<string> Subscriptions { get; set; } = new(); // Event subscriptions
+    public List<string> Topics { get; set; } = new();
+    public List<string> Queues { get; set; } = new();
+    public List<string> Subscriptions { get; set; } = new();
     public bool EnableDeadLetterQueue { get; set; } = true;
     public bool EnableBatching { get; set; } = true;
     public int BatchSize { get; set; } = 100;
     public int MaxRetries { get; set; } = 3;
     public TimeSpan MessageTimeout { get; set; } = TimeSpan.FromMinutes(5);
-    public bool EnablePartitioning { get; set; } = true; // For Kafka
-    public int PartitionCount { get; set; } = 3; // For Kafka
-    public string ConsumerGroup { get; set; } = "default"; // For Kafka
+    public bool EnablePartitioning { get; set; } = true;
+    public int PartitionCount { get; set; } = 3;
+    public string ConsumerGroup { get; set; } = "default";
     public Dictionary<string, object> Options { get; set; } = new();
 }
 
@@ -97,14 +99,14 @@ public enum MessagingType
     Google_PubSub,
     NATS,
     Apache_Pulsar,
-    RabbitMQ // Mantido para compatibilidade, mas não recomendado
+    RabbitMQ
 }
 
 public class CacheConfig
 {
     public CacheType Type { get; set; }
     public string ConnectionString { get; set; } = string.Empty;
-    public int DefaultTTL { get; set; } = 3600; // seconds
+    public int DefaultTTL { get; set; } = 3600;
     public bool EnableDistributed { get; set; } = true;
     public Dictionary<string, object> Options { get; set; } = new();
 }
@@ -423,6 +425,15 @@ public class ServiceDefinition
     public DateTime CreatedAt { get; set; }
     public DateTime? LastHealthCheck { get; set; }
     public bool IsHealthy { get; set; }
+}
+
+public class ApiHealthCheck
+{
+    public Guid ApiId { get; set; }
+    public bool IsHealthy { get; set; }
+    public DateTime CheckedAt { get; set; }
+    public string? ErrorMessage { get; set; }
+    public TimeSpan ResponseTime { get; set; }
 }
 
 public class NotificationItem

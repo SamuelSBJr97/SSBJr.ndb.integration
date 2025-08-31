@@ -1,13 +1,13 @@
 @page "/api-interfaces"
-@using SSBJr.ndb.integration.Web.Models
+@using SSBJr.ndb.integration.Blazor.Models
 @using Microsoft.AspNetCore.SignalR.Client
 @using System.Text.Json
 @using System.Text
-@rendermode InteractiveServer
 @implements IAsyncDisposable
 @inject HttpClient Http
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+@inject ILogger<ApiInterfaces> Logger
 
 <PageTitle>Interfaces de API</PageTitle>
 
@@ -21,14 +21,9 @@
                     </h1>
                     <p class="text-muted">Gerencie interfaces de API com GraphQL, REST e infraestrutura completa</p>
                 </div>
-                <div>
-                    <button class="btn btn-primary btn-lg me-2" @onclick="ShowCreateForm">
-                        <i class="bi bi-plus-circle"></i> Nova Interface
-                    </button>
-                    <button class="btn btn-outline-success" @onclick="ShowImportForm">
-                        <i class="bi bi-upload"></i> Importar
-                    </button>
-                </div>
+                <button class="btn btn-primary btn-lg" @onclick="ShowCreateForm">
+                    <i class="bi bi-plus-circle"></i> Nova Interface
+                </button>
             </div>
         </div>
     </div>
@@ -91,21 +86,11 @@
 
     <!-- Search and Filters -->
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-md-8">
             <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input type="text" class="form-control" placeholder="Buscar interfaces..." @bind="searchQuery" @oninput="OnSearchChanged" />
             </div>
-        </div>
-        <div class="col-md-4">
-            <select class="form-select" @bind="statusFilter" @bind:after="ApplyFilters">
-                <option value="">Todos os Status</option>
-                <option value="@ApiStatus.Draft">Rascunho</option>
-                <option value="@ApiStatus.Running">Em Execução</option>
-                <option value="@ApiStatus.Deploying">Implantando</option>
-                <option value="@ApiStatus.Stopped">Parado</option>
-                <option value="@ApiStatus.Failed">Com Falha</option>
-            </select>
         </div>
         <div class="col-md-4 text-end">
             <div class="btn-group">
@@ -114,9 +99,6 @@
                 </button>
                 <button class="btn btn-outline-info" @onclick="ShowAuditLogs">
                     <i class="bi bi-journal-text"></i> Auditoria
-                </button>
-                <button class="btn btn-outline-success" @onclick="ExportData">
-                    <i class="bi bi-download"></i> Exportar
                 </button>
             </div>
         </div>
@@ -136,14 +118,9 @@
             <i class="bi bi-inbox display-1 text-muted mb-3"></i>
             <h3 class="text-muted">Nenhuma interface encontrada</h3>
             <p class="text-muted">Crie sua primeira interface de API para começar.</p>
-            <div class="d-flex justify-content-center gap-2">
-                <button class="btn btn-primary btn-lg" @onclick="ShowCreateForm">
-                    <i class="bi bi-plus-circle"></i> Criar Interface
-                </button>
-                <button class="btn btn-outline-secondary btn-lg" @onclick="ShowImportForm">
-                    <i class="bi bi-upload"></i> Importar Swagger
-                </button>
-            </div>
+            <button class="btn btn-primary btn-lg" @onclick="ShowCreateForm">
+                <i class="bi bi-plus-circle"></i> Criar Interface
+            </button>
         </div>
     }
     else
@@ -190,6 +167,19 @@
                                 </div>
                             </div>
 
+                            <!-- Endpoint -->
+                            @if (!string.IsNullOrEmpty(apiInterface.BaseUrl))
+                            {
+                                <div class="mb-3">
+                                    <small class="text-muted d-block">Endpoint:</small>
+                                    <small class="text-truncate d-block">
+                                        <a href="@apiInterface.BaseUrl" target="_blank" class="text-decoration-none">
+                                            @apiInterface.BaseUrl
+                                        </a>
+                                    </small>
+                                </div>
+                            }
+
                             <!-- Tags -->
                             @if (apiInterface.Tags.Any())
                             {
@@ -219,6 +209,10 @@
                                 @if (apiInterface.UpdatedAt.HasValue)
                                 {
                                     <div><i class="bi bi-pencil"></i> Atualizado: @apiInterface.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                }
+                                @if (apiInterface.LastHealthCheck.HasValue)
+                                {
+                                    <div><i class="bi bi-heart"></i> Verificado: @apiInterface.LastHealthCheck.Value.ToString("dd/MM/yyyy HH:mm")</div>
                                 }
                             </div>
                         </div>
@@ -261,9 +255,6 @@
                                 <button class="btn btn-outline-secondary btn-sm" @onclick="() => ShowLogs(apiInterface.Id)" title="Logs">
                                     <i class="bi bi-file-text"></i>
                                 </button>
-                                <button class="btn btn-outline-success btn-sm" @onclick="() => DuplicateInterface(apiInterface)" title="Duplicar">
-                                    <i class="bi bi-files"></i>
-                                </button>
                                 <button class="btn btn-outline-danger btn-sm" @onclick="() => DeleteInterface(apiInterface.Id)" title="Deletar">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -283,80 +274,168 @@
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">
-                        @if (editingInterface != null)
-                        {
-                            <i class="bi bi-pencil"></i> <text>Editar Interface</text>
-                        }
-                        else
-                        {
-                            <i class="bi bi-plus-circle"></i> <text>Nova Interface</text>
-                        }
-                    </h5>
+                    <h5 class="modal-title">@(editingInterface != null ? "Editar Interface" : "Nova Interface")</h5>
                     <button type="button" class="btn-close" @onclick="HideModal"></button>
                 </div>
                 <div class="modal-body">
-                    <ApiInterfaceForm Model="@currentInterface" OnSubmit="@SaveInterface" OnCancel="@HideModal" />
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- Import Modal -->
-@if (showImportModal)
-{
-    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-upload"></i> Importar Interface
-                    </h5>
-                    <button type="button" class="btn-close" @onclick="HideImportModal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Tipo de Importação</label>
-                        <select class="form-select" @bind="importType">
-                            <option value="swagger">Swagger/OpenAPI JSON</option>
-                            <option value="graphql">GraphQL Schema</option>
-                            <option value="postman">Coleção Postman</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Arquivo</label>
-                        <InputFile OnChange="@OnImportFileSelected" class="form-control" accept=".json,.graphql,.txt" />
-                        @if (!string.IsNullOrEmpty(selectedImportFileName))
-                        {
-                            <small class="text-success mt-1 d-block">? @selectedImportFileName</small>
-                        }
-                    </div>
-                    
-                    @if (!string.IsNullOrEmpty(importErrorMessage))
-                    {
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-triangle"></i> @importErrorMessage
+                    <EditForm Model="@currentRequest" OnValidSubmit="@SaveInterface">
+                        <div class="row">
+                            <!-- Basic Information -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">Informações Básicas</h6>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Nome</label>
+                                    <InputText @bind-Value="currentRequest.Name" class="form-control" placeholder="Nome da interface" />
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Descrição</label>
+                                    <InputTextArea @bind-Value="currentRequest.Description" class="form-control" rows="3" placeholder="Descrição da interface" />
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Tipo</label>
+                                            <InputSelect @bind-Value="currentRequest.Type" class="form-select">
+                                                <option value="@ApiType.REST">REST API</option>
+                                                <option value="@ApiType.GraphQL">GraphQL</option>
+                                                <option value="@ApiType.Hybrid">Híbrido</option>
+                                            </InputSelect>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Versão</label>
+                                            <InputText @bind-Value="currentRequest.Version" class="form-control" placeholder="1.0.0" />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Tags (separadas por vírgula)</label>
+                                    <input type="text" class="form-control" @bind="tagsInput" placeholder="api, microservice, backend" />
+                                </div>
+                            </div>
+                            
+                            <!-- API Definition -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">Definição da API</h6>
+                                
+                                @if (currentRequest.Type != ApiType.GraphQL)
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Arquivo Swagger JSON</label>
+                                        <InputFile OnChange="@OnSwaggerFileSelected" class="form-control" accept=".json" />
+                                        @if (!string.IsNullOrEmpty(selectedSwaggerFileName))
+                                        {
+                                            <small class="text-success mt-1 d-block">? @selectedSwaggerFileName</small>
+                                        }
+                                        @if (!string.IsNullOrEmpty(currentRequest.SwaggerJson))
+                                        {
+                                            <small class="text-info mt-1 d-block">JSON carregado (@(currentRequest.SwaggerJson.Length) chars)</small>
+                                        }
+                                    </div>
+                                }
+                                
+                                @if (currentRequest.Type != ApiType.REST)
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Schema GraphQL</label>
+                                        <InputTextArea @bind-Value="currentRequest.GraphQLSchema" class="form-control" rows="8" 
+                                                     placeholder="type Query { hello: String }" />
+                                    </div>
+                                }
+                            </div>
                         </div>
-                    }
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="HideImportModal">
-                        Cancelar
-                    </button>
-                    <button type="button" class="btn btn-primary" @onclick="ProcessImport" disabled="@(string.IsNullOrEmpty(selectedImportFileName) || isImporting)">
-                        @if (isImporting)
+                        
+                        <!-- Infrastructure Configuration -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-gear"></i> Configuração de Infraestrutura
+                                </h6>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">Banco de Dados</label>
+                                    <InputSelect @bind-Value="currentRequest.Infrastructure.Database.Type" class="form-select">
+                                        <option value="@DatabaseType.PostgreSQL">PostgreSQL</option>
+                                        <option value="@DatabaseType.MongoDB">MongoDB</option>
+                                        <option value="@DatabaseType.MySQL">MySQL</option>
+                                        <option value="@DatabaseType.SQLServer">SQL Server</option>
+                                        <option value="@DatabaseType.Redis">Redis</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">Cache</label>
+                                    <InputSelect @bind-Value="currentRequest.Infrastructure.Cache.Type" class="form-select">
+                                        <option value="@CacheType.Redis">Redis</option>
+                                        <option value="@CacheType.Memcached">Memcached</option>
+                                        <option value="@CacheType.InMemory">In Memory</option>
+                                        <option value="@CacheType.None">Nenhum</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">Messaging</label>
+                                    <InputSelect @bind-Value="currentRequest.Infrastructure.Messaging.Type" class="form-select">
+                                        <option value="@MessagingType.None">Nenhum</option>
+                                        <option value="@MessagingType.Apache_Kafka">Apache Kafka</option>
+                                        <option value="@MessagingType.Azure_ServiceBus">Azure Service Bus</option>
+                                        <option value="@MessagingType.AWS_SQS">AWS SQS</option>
+                                        <option value="@MessagingType.Google_PubSub">Google Pub/Sub</option>
+                                        <option value="@MessagingType.NATS">NATS</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">Autenticação</label>
+                                    <InputSelect @bind-Value="currentRequest.Security.Authentication.Type" class="form-select">
+                                        <option value="@AuthenticationType.None">Nenhuma</option>
+                                        <option value="@AuthenticationType.JWT">JWT</option>
+                                        <option value="@AuthenticationType.OAuth2">OAuth2</option>
+                                        <option value="@AuthenticationType.ApiKey">API Key</option>
+                                        <option value="@AuthenticationType.Basic">Basic Auth</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(errorMessage))
                         {
-                            <span class="spinner-border spinner-border-sm me-2"></span>
-                            <text>Importando...</text>
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle"></i> @errorMessage
+                            </div>
                         }
-                        else
-                        {
-                            <i class="bi bi-upload"></i>
-                            <text>Importar</text>
-                        }
-                    </button>
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" @onclick="HideModal">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                    <text>Salvando...</text>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-save"></i>
+                                    <text>@(editingInterface != null ? "Atualizar" : "Criar")</text>
+                                }
+                            </button>
+                        </div>
+                    </EditForm>
                 </div>
             </div>
         </div>
@@ -384,16 +463,13 @@
     private IEnumerable<ApiInterface>? interfaces;
     private bool loading = true;
     private string searchQuery = string.Empty;
-    private string statusFilter = string.Empty;
     private bool showModal = false;
-    private bool showImportModal = false;
-    private bool isImporting = false;
-    private string importType = "swagger";
-    private string selectedImportFileName = string.Empty;
-    private string importContent = string.Empty;
-    private string importErrorMessage = string.Empty;
+    private bool isSubmitting = false;
     private ApiInterface? editingInterface;
-    private ApiInterfaceCreateRequest currentInterface = new();
+    private ApiInterfaceCreateRequest currentRequest = new();
+    private string errorMessage = string.Empty;
+    private string selectedSwaggerFileName = string.Empty;
+    private string tagsInput = string.Empty;
     private List<NotificationItem> notifications = new();
     private HubConnection? hubConnection;
     private Timer? searchTimer;
@@ -411,7 +487,7 @@
             loading = true;
             StateHasChanged();
 
-            var url = $"/api/interfaces?search={Uri.EscapeDataString(searchQuery)}";
+            var url = $"https://localhost:7080/api/interfaces?search={Uri.EscapeDataString(searchQuery)}";
             var response = await Http.GetAsync(url);
             
             if (response.IsSuccessStatusCode)
@@ -421,11 +497,16 @@
                 {
                     PropertyNameCaseInsensitive = true
                 });
-                ApplyFilters();
+            }
+            else
+            {
+                interfaces = new List<ApiInterface>();
+                AddNotification("Aviso", "Não foi possível carregar as interfaces", "warning");
             }
         }
         catch (Exception ex)
         {
+            interfaces = new List<ApiInterface>();
             AddNotification("Erro", $"Erro ao carregar interfaces: {ex.Message}", "error");
         }
         finally
@@ -433,24 +514,6 @@
             loading = false;
             StateHasChanged();
         }
-    }
-
-    private void ApplyFilters()
-    {
-        if (interfaces == null) return;
-
-        var filtered = interfaces.AsEnumerable();
-
-        if (!string.IsNullOrEmpty(statusFilter))
-        {
-            if (Enum.TryParse<ApiStatus>(statusFilter, out var status))
-            {
-                filtered = filtered.Where(i => i.Status == status);
-            }
-        }
-
-        interfaces = filtered.ToList();
-        StateHasChanged();
     }
 
     private void OnSearchChanged(ChangeEventArgs e)
@@ -471,7 +534,7 @@
     private void ShowCreateForm()
     {
         editingInterface = null;
-        currentInterface = new ApiInterfaceCreateRequest
+        currentRequest = new ApiInterfaceCreateRequest
         {
             Infrastructure = new InfrastructureConfig
             {
@@ -497,7 +560,7 @@
     private void EditInterface(ApiInterface apiInterface)
     {
         editingInterface = apiInterface;
-        currentInterface = new ApiInterfaceCreateRequest
+        currentRequest = new ApiInterfaceCreateRequest
         {
             Name = apiInterface.Name,
             Description = apiInterface.Description,
@@ -511,6 +574,7 @@
             Tags = apiInterface.Tags,
             Metadata = apiInterface.Metadata
         };
+        tagsInput = string.Join(", ", apiInterface.Tags);
         showModal = true;
     }
 
@@ -518,28 +582,99 @@
     {
         showModal = false;
         editingInterface = null;
+        errorMessage = string.Empty;
+        selectedSwaggerFileName = string.Empty;
+        tagsInput = string.Empty;
+    }
+
+    private async Task OnSwaggerFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            try
+            {
+                if (file.Size > 10 * 1024 * 1024) // 10MB max
+                {
+                    errorMessage = "Arquivo muito grande. Máximo permitido: 10MB";
+                    return;
+                }
+
+                using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+                using var reader = new StreamReader(stream);
+                currentRequest.SwaggerJson = await reader.ReadToEndAsync();
+                
+                // Validate JSON
+                JsonDocument.Parse(currentRequest.SwaggerJson);
+                
+                selectedSwaggerFileName = file.Name;
+                errorMessage = string.Empty;
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Erro ao ler arquivo: {ex.Message}";
+                selectedSwaggerFileName = string.Empty;
+                currentRequest.SwaggerJson = string.Empty;
+            }
+        }
     }
 
     private async Task SaveInterface()
     {
+        if (string.IsNullOrWhiteSpace(currentRequest.Name))
+        {
+            errorMessage = "Nome é obrigatório";
+            return;
+        }
+
+        isSubmitting = true;
+        errorMessage = string.Empty;
+
         try
         {
+            // Parse tags
+            if (!string.IsNullOrWhiteSpace(tagsInput))
+            {
+                currentRequest.Tags = tagsInput.Split(',')
+                    .Select(tag => tag.Trim())
+                    .Where(tag => !string.IsNullOrEmpty(tag))
+                    .ToList();
+            }
+
             string url;
             HttpResponseMessage response;
             
-            var json = JsonSerializer.Serialize(currentInterface);
+            var json = JsonSerializer.Serialize(currentRequest);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             if (editingInterface != null)
             {
                 // Update
-                url = $"/api/interfaces/{editingInterface.Id}";
-                response = await Http.PutAsync(url, content);
+                var updateRequest = new ApiInterfaceUpdateRequest
+                {
+                    Name = currentRequest.Name,
+                    Description = currentRequest.Description,
+                    Version = currentRequest.Version,
+                    GraphQLSchema = currentRequest.GraphQLSchema,
+                    SwaggerJson = currentRequest.SwaggerJson,
+                    Infrastructure = currentRequest.Infrastructure,
+                    Security = currentRequest.Security,
+                    Monitoring = currentRequest.Monitoring,
+                    Tags = currentRequest.Tags,
+                    Metadata = currentRequest.Metadata
+                };
+                
+                var updateJson = JsonSerializer.Serialize(updateRequest);
+                var updateContent = new StringContent(updateJson, Encoding.UTF8, "application/json");
+                
+                url = $"https://localhost:7080/api/interfaces/{editingInterface.Id}";
+                response = await Http.PutAsync(url, updateContent);
             }
             else
             {
                 // Create
-                url = "/api/interfaces";
+                url = "https://localhost:7080/api/interfaces";
                 response = await Http.PostAsync(url, content);
             }
 
@@ -554,12 +689,16 @@
             else
             {
                 var error = await response.Content.ReadAsStringAsync();
-                AddNotification("Erro", $"Erro ao salvar interface: {error}", "error");
+                errorMessage = $"Erro ao salvar interface: {error}";
             }
         }
         catch (Exception ex)
         {
-            AddNotification("Erro", $"Erro: {ex.Message}", "error");
+            errorMessage = $"Erro: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
         }
     }
 
@@ -567,7 +706,7 @@
     {
         try
         {
-            var response = await Http.PostAsync($"/api/interfaces/{id}/deploy", null);
+            var response = await Http.PostAsync($"https://localhost:7080/api/interfaces/{id}/deploy", null);
             if (response.IsSuccessStatusCode)
             {
                 AddNotification("Sucesso", "Implantação iniciada!", "success");
@@ -584,7 +723,7 @@
     {
         try
         {
-            var response = await Http.PostAsync($"/api/interfaces/{id}/stop", null);
+            var response = await Http.PostAsync($"https://localhost:7080/api/interfaces/{id}/stop", null);
             if (response.IsSuccessStatusCode)
             {
                 AddNotification("Sucesso", "Interface parada!", "success");
@@ -601,7 +740,7 @@
     {
         try
         {
-            var response = await Http.PostAsync($"/api/interfaces/{id}/restart", null);
+            var response = await Http.PostAsync($"https://localhost:7080/api/interfaces/{id}/restart", null);
             if (response.IsSuccessStatusCode)
             {
                 AddNotification("Sucesso", "Interface reiniciada!", "success");
@@ -618,7 +757,7 @@
     {
         try
         {
-            var response = await Http.PostAsync($"/api/interfaces/{id}/validate", null);
+            var response = await Http.PostAsync($"https://localhost:7080/api/interfaces/{id}/validate", null);
             if (response.IsSuccessStatusCode)
             {
                 AddNotification("Sucesso", "Validação concluída!", "success");
@@ -643,7 +782,7 @@
         {
             try
             {
-                var response = await Http.DeleteAsync($"/api/interfaces/{id}");
+                var response = await Http.DeleteAsync($"https://localhost:7080/api/interfaces/{id}");
                 if (response.IsSuccessStatusCode)
                 {
                     AddNotification("Sucesso", "Interface deletada!", "success");
@@ -677,7 +816,7 @@
         try
         {
             hubConnection = new HubConnectionBuilder()
-                .WithUrl(Navigation.ToAbsoluteUri("/notifications"))
+                .WithUrl("https://localhost:7080/notifications")
                 .Build();
 
             hubConnection.On<object>("InterfaceStatusChanged", async (data) =>
@@ -700,177 +839,6 @@
         catch (Exception ex)
         {
             AddNotification("Aviso", $"Conexão com notificações falhou: {ex.Message}", "warning");
-        }
-    }
-
-    private void ShowImportForm()
-    {
-        importType = "swagger";
-        selectedImportFileName = string.Empty;
-        importContent = string.Empty;
-        importErrorMessage = string.Empty;
-        showImportModal = true;
-    }
-
-    private void HideImportModal()
-    {
-        showImportModal = false;
-        selectedImportFileName = string.Empty;
-        importContent = string.Empty;
-        importErrorMessage = string.Empty;
-    }
-
-    private async Task OnImportFileSelected(InputFileChangeEventArgs e)
-    {
-        var file = e.File;
-        if (file != null)
-        {
-            try
-            {
-                if (file.Size > 10 * 1024 * 1024) // 10MB max
-                {
-                    importErrorMessage = "Arquivo muito grande. Máximo permitido: 10MB";
-                    return;
-                }
-
-                using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-                using var reader = new StreamReader(stream);
-                importContent = await reader.ReadToEndAsync();
-                
-                selectedImportFileName = file.Name;
-                importErrorMessage = string.Empty;
-                StateHasChanged();
-            }
-            catch (Exception ex)
-            {
-                importErrorMessage = $"Erro ao ler arquivo: {ex.Message}";
-                selectedImportFileName = string.Empty;
-                importContent = string.Empty;
-            }
-        }
-    }
-
-    private async Task ProcessImport()
-    {
-        isImporting = true;
-        importErrorMessage = string.Empty;
-
-        try
-        {
-            var request = new ApiInterfaceCreateRequest
-            {
-                Name = Path.GetFileNameWithoutExtension(selectedImportFileName),
-                Description = $"Importado de {selectedImportFileName}",
-                Type = importType == "graphql" ? ApiType.GraphQL : ApiType.REST,
-                Version = "1.0.0",
-                Infrastructure = new InfrastructureConfig
-                {
-                    Database = new DatabaseConfig { Type = DatabaseType.PostgreSQL },
-                    Cache = new CacheConfig { Type = CacheType.Redis },
-                    Messaging = new MessagingConfig { Type = MessagingType.None },
-                    Storage = new StorageConfig { Type = StorageType.None },
-                    Scaling = new ScalingConfig()
-                },
-                Security = new SecurityConfig
-                {
-                    Authentication = new AuthenticationConfig { Type = AuthenticationType.JWT },
-                    Authorization = new AuthorizationConfig(),
-                    Encryption = new EncryptionConfig(),
-                    RateLimit = new RateLimitConfig(),
-                    Cors = new CorsConfig()
-                },
-                Monitoring = new MonitoringConfig(),
-                Tags = new List<string> { "importado", importType }
-            };
-
-            if (importType == "swagger")
-            {
-                request.SwaggerJson = importContent;
-            }
-            else if (importType == "graphql")
-            {
-                request.GraphQLSchema = importContent;
-            }
-
-            var json = JsonSerializer.Serialize(request);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            
-            var response = await Http.PostAsync("/api/interfaces", content);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                HideImportModal();
-                await LoadInterfaces();
-                AddNotification("Sucesso", "Interface importada com sucesso!", "success");
-            }
-            else
-            {
-                var error = await response.Content.ReadAsStringAsync();
-                importErrorMessage = $"Erro ao importar: {error}";
-            }
-        }
-        catch (Exception ex)
-        {
-            importErrorMessage = $"Erro: {ex.Message}";
-        }
-        finally
-        {
-            isImporting = false;
-        }
-    }
-
-    private async Task DuplicateInterface(ApiInterface original)
-    {
-        try
-        {
-            var duplicateRequest = new ApiInterfaceCreateRequest
-            {
-                Name = $"{original.Name} (Cópia)",
-                Description = original.Description,
-                Type = original.Type,
-                Version = "1.0.0",
-                GraphQLSchema = original.GraphQLSchema,
-                SwaggerJson = original.SwaggerJson,
-                Infrastructure = original.Infrastructure,
-                Security = original.Security,
-                Monitoring = original.Monitoring,
-                Tags = original.Tags.Concat(new[] { "duplicado" }).ToList(),
-                Metadata = original.Metadata
-            };
-
-            var json = JsonSerializer.Serialize(duplicateRequest);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            
-            var response = await Http.PostAsync("/api/interfaces", content);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                await LoadInterfaces();
-                AddNotification("Sucesso", "Interface duplicada com sucesso!", "success");
-            }
-        }
-        catch (Exception ex)
-        {
-            AddNotification("Erro", $"Erro ao duplicar interface: {ex.Message}", "error");
-        }
-    }
-
-    private async Task ExportData()
-    {
-        try
-        {
-            var response = await Http.GetAsync("/api/interfaces");
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                var blob = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
-                await JS.InvokeVoidAsync("downloadFile", "interfaces-export.json", blob);
-                AddNotification("Sucesso", "Dados exportados com sucesso!", "success");
-            }
-        }
-        catch (Exception ex)
-        {
-            AddNotification("Erro", $"Erro ao exportar dados: {ex.Message}", "error");
         }
     }
 
@@ -922,7 +890,7 @@
         ApiStatus.Stopped => "??",
         ApiStatus.Validating => "??",
         ApiStatus.Updating => "??",
-        _ => "??"
+        _ => "?"
     };
 
     private string GetNotificationIcon(string type) => type switch
@@ -950,21 +918,3 @@
         }
     }
 }
-<script>
-    window.downloadFile = (filename, content) => {
-        const byteCharacters = atob(content);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/json' });
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-</script>

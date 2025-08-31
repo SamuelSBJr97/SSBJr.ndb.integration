@@ -348,6 +348,75 @@ public class ApiInterfaceService : IApiInterfaceService
         }
     }
 
+    public async Task<IEnumerable<ServiceDefinition>> GetAllServicesAsync()
+    {
+        try
+        {
+            var services = new List<ServiceDefinition>();
+
+            // Get all API interfaces from database
+            var apiInterfaces = await _context.ApiInterfaces.ToListAsync();
+
+            foreach (var apiInterface in apiInterfaces)
+            {
+                services.Add(new ServiceDefinition
+                {
+                    Id = apiInterface.Id,
+                    Name = apiInterface.Name,
+                    Description = apiInterface.Description,
+                    ServiceType = apiInterface.Type.ToString(),
+                    Version = apiInterface.Version,
+                    Status = apiInterface.Status.ToString(),
+                    Endpoint = GetEndpointUrl(apiInterface),
+                    Configuration = new Dictionary<string, object>
+                    {
+                        ["database"] = apiInterface.Infrastructure.Database.Type.ToString(),
+                        ["cache"] = apiInterface.Infrastructure.Cache.Type.ToString(),
+                        ["messaging"] = apiInterface.Infrastructure.Messaging.Type.ToString(),
+                        ["authentication"] = apiInterface.Security.Authentication.Type.ToString()
+                    },
+                    Tags = apiInterface.Tags,
+                    CreatedAt = apiInterface.CreatedAt,
+                    LastHealthCheck = await GetLastHealthCheckAsync(apiInterface),
+                    IsHealthy = await _infrastructureService.HealthCheckAsync(apiInterface)
+                });
+            }
+
+            return services.OrderByDescending(s => s.CreatedAt);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all services");
+            return new List<ServiceDefinition>();
+        }
+    }
+
+    private string GetEndpointUrl(ApiInterface apiInterface)
+    {
+        if (apiInterface.DeploymentInfo != null && !string.IsNullOrEmpty(apiInterface.DeploymentInfo.ContainerId))
+        {
+            var basePort = 8000 + (Math.Abs(apiInterface.Id.GetHashCode()) % 1000);
+            return $"http://localhost:{basePort}";
+        }
+        return string.Empty;
+    }
+
+    private async Task<DateTime?> GetLastHealthCheckAsync(ApiInterface apiInterface)
+    {
+        try
+        {
+            if (apiInterface.Status == ApiStatus.Running)
+            {
+                return DateTime.UtcNow;
+            }
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private async Task ValidateRequestAsync(ApiInterfaceCreateRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Name))

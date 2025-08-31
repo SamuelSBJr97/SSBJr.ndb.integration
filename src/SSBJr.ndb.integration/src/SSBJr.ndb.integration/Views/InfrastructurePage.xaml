@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="SSBJr.ndb.integration.Views.InfrastructurePage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:SSBJr.ndb.integration.ViewModels"
+             x:DataType="viewmodels:InfrastructureViewModel"
+             Title="??? Gerenciamento de Infraestrutura"
+             Shell.BackgroundColor="{StaticResource Primary}">
+
+    <Grid>
+        <ScrollView>
+            <StackLayout Padding="20" Spacing="20">
+
+                <!-- Header Card -->
+                <Frame BackgroundColor="{StaticResource Primary}" 
+                       CornerRadius="15" 
+                       Padding="20"
+                       HasShadow="True">
+                    <StackLayout>
+                        <Label Text="??? Infraestrutura de APIs"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               HorizontalOptions="Center" />
+                        <Label Text="Configure e gerencie a infraestrutura das suas APIs"
+                               FontSize="14"
+                               TextColor="White"
+                               Opacity="0.8"
+                               HorizontalOptions="Center" />
+                    </StackLayout>
+                </Frame>
+
+                <!-- System Health Card -->
+                <Frame BackgroundColor="White" 
+                       CornerRadius="15" 
+                       Padding="20"
+                       HasShadow="True"
+                       IsVisible="{Binding SystemHealth, Converter={StaticResource IsNotNullConverter}}">
+                    <StackLayout>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackLayout Grid.Column="0">
+                                <Label Text="?? Saúde do Sistema"
+                                       FontSize="18"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary}" />
+                                <Label Text="{Binding SystemHealth.LastCheck, StringFormat='Última verificação: {0:HH:mm:ss}'}"
+                                       FontSize="12"
+                                       TextColor="Gray" />
+                            </StackLayout>
+
+                            <Label Grid.Column="1"
+                                   Text="{Binding SystemHealth.IsHealthy, Converter={StaticResource HealthToEmojiConverter}}"
+                                   FontSize="32"
+                                   VerticalOptions="Center" />
+                        </Grid>
+
+                        <!-- Services Status -->
+                        <CollectionView ItemsSource="{Binding SystemHealth.Services}"
+                                        IsVisible="{Binding SystemHealth.Services, Converter={StaticResource IsNotEmptyConverter}}">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Padding="0,5" ColumnDefinitions="Auto,*,Auto">
+                                        <Label Grid.Column="0"
+                                               Text="{Binding Value.IsHealthy, Converter={StaticResource BoolToEmojiConverter}}"
+                                               FontSize="16"
+                                               VerticalOptions="Center" />
+                                        <Label Grid.Column="1"
+                                               Text="{Binding Key}"
+                                               FontSize="14"
+                                               VerticalOptions="Center"
+                                               Margin="10,0" />
+                                        <Label Grid.Column="2"
+                                               Text="{Binding Value.Status}"
+                                               FontSize="12"
+                                               TextColor="Gray"
+                                               VerticalOptions="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+
+                        <Button Text="?? Verificar Saúde"
+                                Command="{Binding LoadSystemHealthCommand}"
+                                BackgroundColor="{StaticResource Secondary}"
+                                TextColor="White"
+                                CornerRadius="8"
+                                Margin="0,10,0,0" />
+                    </StackLayout>
+                </Frame>
+
+                <!-- Infrastructure Templates Card -->
+                <Frame BackgroundColor="White" 
+                       CornerRadius="15" 
+                       Padding="20"
+                       HasShadow="True">
+                    <StackLayout>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <Label Grid.Column="0"
+                                   Text="?? Templates de Infraestrutura"
+                                   FontSize="18"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary}"
+                                   VerticalOptions="Center" />
+
+                            <Button Grid.Column="1"
+                                    Text="??"
+                                    Command="{Binding LoadTemplatesCommand}"
+                                    BackgroundColor="{StaticResource Secondary}"
+                                    TextColor="White"
+                                    CornerRadius="20"
+                                    WidthRequest="40"
+                                    HeightRequest="40" />
+                        </Grid>
+
+                        <CollectionView ItemsSource="{Binding Templates}" 
+                                        SelectionMode="Single"
+                                        SelectedItem="{Binding SelectedTemplate}">
+                            <CollectionView.ItemsLayout>
+                                <GridItemsLayout Orientation="Vertical" Span="1" />
+                            </CollectionView.ItemsLayout>
+                            
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Frame BackgroundColor="{Binding IsRecommended, Converter={StaticResource RecommendedToColorConverter}}" 
+                                           CornerRadius="12" 
+                                           Margin="0,5"
+                                           Padding="15"
+                                           HasShadow="True">
+                                        <Frame.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:InfrastructureViewModel}}, Path=SelectTemplateCommand}"
+                                                                  CommandParameter="{Binding .}" />
+                                        </Frame.GestureRecognizers>
+                                        
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <Label Grid.Row="0" Grid.Column="0"
+                                                   Text="{Binding Icon}"
+                                                   FontSize="28"
+                                                   VerticalOptions="Center" />
+
+                                            <StackLayout Grid.Row="0" Grid.Column="1" 
+                                                         Grid.RowSpan="2"
+                                                         Margin="15,0,0,0">
+                                                <Label Text="{Binding Name}"
+                                                       FontSize="16"
+                                                       FontAttributes="Bold"
+                                                       TextColor="White" />
+                                                <Label Text="{Binding Description}"
+                                                       FontSize="12"
+                                                       TextColor="White"
+                                                       Opacity="0.8" />
+                                            </StackLayout>
+
+                                            <Label Grid.Row="0" Grid.Column="2"
+                                                   Text="?"
+                                                   FontSize="16"
+                                                   IsVisible="{Binding IsRecommended}"
+                                                   VerticalOptions="Start" />
+
+                                            <!-- Configuration Summary -->
+                                            <StackLayout Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" 
+                                                         Orientation="Horizontal" 
+                                                         Margin="0,10,0,0">
+                                                <Label Text="{Binding Configuration.Database.Type, StringFormat='DB: {0}'}"
+                                                       FontSize="10"
+                                                       BackgroundColor="White"
+                                                       TextColor="{StaticResource Primary}"
+                                                       Padding="8,4"
+                                                       Margin="0,0,5,0" />
+                                                <Label Text="{Binding Configuration.Messaging.Type, StringFormat='MSG: {0}'}"
+                                                       FontSize="10"
+                                                       BackgroundColor="White"
+                                                       TextColor="{StaticResource Primary}"
+                                                       Padding="8,4"
+                                                       Margin="0,0,5,0"
+                                                       IsVisible="{Binding Configuration.Messaging.Type, Converter={StaticResource NotEqualsConverter}, ConverterParameter='None'}" />
+                                                <Label Text="{Binding Configuration.Cache.Type, StringFormat='Cache: {0}'}"
+                                                       FontSize="10"
+                                                       BackgroundColor="White"
+                                                       TextColor="{StaticResource Primary}"
+                                                       Padding="8,4" />
+                                            </StackLayout>
+                                        </Grid>
+                                    </Frame>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </StackLayout>
+                </Frame>
+
+                <!-- APIs List Card -->
+                <Frame BackgroundColor="White" 
+                       CornerRadius="15" 
+                       Padding="20"
+                       HasShadow="True">
+                    <StackLayout>
+                        <Label Text="?? APIs Disponíveis"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource Primary}" />
+
+                        <Label Text="Selecione uma API para aplicar o template de infraestrutura selecionado"
+                               FontSize="12"
+                               TextColor="Gray"
+                               Margin="0,0,0,10" />
+
+                        <CollectionView ItemsSource="{Binding ApiInterfaces}">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Frame BackgroundColor="{StaticResource Tertiary}" 
+                                           CornerRadius="10" 
+                                           Margin="0,5"
+                                           Padding="15"
+                                           HasShadow="True">
+                                        <Frame.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:InfrastructureViewModel}}, Path=ApplyTemplateCommand}"
+                                                                  CommandParameter="{Binding .}" />
+                                        </Frame.GestureRecognizers>
+                                        
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <Label Grid.Column="0"
+                                                   Text="{Binding Status, Converter={StaticResource StatusToEmojiConverter}}"
+                                                   FontSize="20"
+                                                   VerticalOptions="Center" />
+
+                                            <StackLayout Grid.Column="1" Margin="15,0,0,0">
+                                                <Label Text="{Binding Name}"
+                                                       FontSize="16"
+                                                       FontAttributes="Bold"
+                                                       TextColor="{StaticResource Primary}" />
+                                                <Label Text="{Binding Description}"
+                                                       FontSize="12"
+                                                       TextColor="Gray" />
+                                                <Label Text="{Binding Type, StringFormat='Tipo: {0} | Versão: {1}', StringFormat2='{Binding Version}'}"
+                                                       FontSize="10"
+                                                       TextColor="Gray" />
+                                            </StackLayout>
+
+                                            <Label Grid.Column="2"
+                                                   Text="??"
+                                                   FontSize="16"
+                                                   VerticalOptions="Center"
+                                                   Opacity="0.6" />
+                                        </Grid>
+                                    </Frame>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </StackLayout>
+                </Frame>
+
+                <!-- Action Buttons -->
+                <StackLayout Orientation="Horizontal" HorizontalOptions="FillAndExpand">
+                    <Button Text="?? Atualizar"
+                            Command="{Binding RefreshCommand}"
+                            BackgroundColor="{StaticResource Secondary}"
+                            TextColor="White"
+                            CornerRadius="8"
+                            HorizontalOptions="FillAndExpand"
+                            Margin="0,0,10,0" />
+
+                    <Button Text="?? Configurações"
+                            BackgroundColor="{StaticResource Tertiary}"
+                            TextColor="{StaticResource Primary}"
+                            CornerRadius="8"
+                            HorizontalOptions="FillAndExpand"
+                            Clicked="OnSettingsClicked" />
+                </StackLayout>
+
+            </StackLayout>
+        </ScrollView>
+
+        <!-- Loading Overlay -->
+        <Frame IsVisible="{Binding IsLoading}"
+               BackgroundColor="Black"
+               Opacity="0.7"
+               CornerRadius="0"
+               Padding="0">
+            <StackLayout VerticalOptions="Center" HorizontalOptions="Center">
+                <ActivityIndicator IsRunning="{Binding IsLoading}" 
+                                   Color="White" 
+                                   Scale="2" />
+                <Label Text="Carregando..."
+                       TextColor="White"
+                       FontSize="16"
+                       Margin="0,20,0,0" />
+            </StackLayout>
+        </Frame>
+    </Grid>
+
+</ContentPage>

@@ -4,32 +4,60 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:SSBJr.ndb.integration"
+    xmlns:views="clr-namespace:SSBJr.ndb.integration.Views"
     Shell.FlyoutBehavior="Flyout"
-    Title="SSBJr.ndb.integration">
+    Title="SSBJr API Manager">
 
     <Shell.FlyoutHeader>
-        <Grid BackgroundColor="{StaticResource Primary}" HeightRequest="120">
-            <Label Text="🚀 SSBJr API Manager"
-                   FontSize="20"
-                   FontAttributes="Bold"
-                   TextColor="White"
-                   VerticalOptions="Center"
-                   HorizontalOptions="Center" />
+        <Grid BackgroundColor="{StaticResource Primary}" HeightRequest="140" Padding="20">
+            <StackLayout VerticalOptions="Center">
+                <Label Text="🚀 SSBJr API Manager"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalOptions="Center" />
+                <Label Text="Gerenciamento Inteligente de APIs"
+                       FontSize="14"
+                       TextColor="White"
+                       Opacity="0.8"
+                       HorizontalOptions="Center" />
+            </StackLayout>
         </Grid>
     </Shell.FlyoutHeader>
 
-    <FlyoutItem Title="🏠 Início" Icon="house">
+    <FlyoutItem Title="🏠 Início" Icon="home.png">
         <ShellContent
             Title="Início"
             ContentTemplate="{DataTemplate local:MainPage}"
             Route="MainPage" />
     </FlyoutItem>
 
-    <FlyoutItem Title="🚀 Gerenciador de APIs" Icon="cloud_upload">
+    <FlyoutItem Title="🚀 APIs" Icon="api.png">
         <ShellContent
-            Title="APIs"
+            Title="Gerenciar APIs"
             ContentTemplate="{DataTemplate local:ApiManagerPage}"
             Route="ApiManagerPage" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="🏗️ Infraestrutura" Icon="infrastructure.png">
+        <ShellContent
+            Title="Infraestrutura"
+            ContentTemplate="{DataTemplate views:InfrastructurePage}"
+            Route="InfrastructurePage" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="📊 Monitoramento" Icon="monitoring.png">
+        <ShellContent
+            Title="Monitoramento"
+            ContentTemplate="{DataTemplate views:MonitoringPage}"
+            Route="MonitoringPage" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="⚙️ Configurações" Icon="settings.png">
+        <ShellContent
+            Title="Configurações"
+            ContentTemplate="{DataTemplate views:SettingsPage}"
+            Route="SettingsPage" />
     </FlyoutItem>
 
 </Shell>

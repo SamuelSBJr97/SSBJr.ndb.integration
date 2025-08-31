@@ -2,24 +2,34 @@
 {
     public partial class MainPage : ContentPage
     {
-        int count = 0;
-
         public MainPage()
         {
             InitializeComponent();
         }
 
-        private void OnCounterClicked(object sender, EventArgs e)
+        private async void OnManageApisClicked(object sender, EventArgs e)
         {
-            count++;
+            await Shell.Current.GoToAsync("//ApiManagerPage");
+        }
 
-            if (count == 1)
-                CounterBtn.Text = $"Clicked {count} time";
-            else
-                CounterBtn.Text = $"Clicked {count} times";
+        private async void OnInfrastructureClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("//InfrastructurePage");
+        }
 
-            SemanticScreenReader.Announce(CounterBtn.Text);
+        private async void OnMonitoringClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("//MonitoringPage");
+        }
+
+        private async void OnSettingsClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("//SettingsPage");
+        }
+
+        private async void OnGetStartedClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync("//ApiManagerPage");
         }
     }
-
 }

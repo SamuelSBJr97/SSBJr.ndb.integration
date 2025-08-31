@@ -15,4 +15,5 @@ public interface IApiInterfaceService
     Task<ApiInterface> ValidateAsync(Guid id);
     Task<Dictionary<string, object>> GetMetricsAsync(Guid id);
     Task<List<string>> GetLogsAsync(Guid id, int lines = 100);
+    Task<IEnumerable<ServiceDefinition>> GetAllServicesAsync();
 }

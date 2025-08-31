@@ -1,0 +1,1007 @@
+@page "/services"
+@using SSBJr.ndb.integration.Blazor.Models
+@using SSBJr.ndb.integration.Blazor.Services
+@using Microsoft.AspNetCore.SignalR.Client
+@using System.Text.Json
+@using System.Text
+@implements IAsyncDisposable
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@inject ILogger<Services> Logger
+
+<PageTitle>Serviços Disponíveis</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="display-5 text-primary mb-2">
+                        <i class="bi bi-cloud-arrow-up"></i> Serviços Disponíveis
+                    </h1>
+                    <p class="text-muted">Todos os serviços e APIs hospedados na plataforma</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary me-2" @onclick="ShowCreateInterface">
+                        <i class="bi bi-plus-circle"></i> Nova Interface
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="RefreshServices">
+                        <i class="bi bi-arrow-clockwise"></i> Atualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Dashboard -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-gradient bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total de Serviços</h6>
+                            <h3 class="mb-0">@totalServices</h3>
+                        </div>
+                        <i class="bi bi-cloud fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-gradient bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Em Execução</h6>
+                            <h3 class="mb-0">@runningServices</h3>
+                        </div>
+                        <i class="bi bi-play-circle fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-gradient bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Em Implantação</h6>
+                            <h3 class="mb-0">@deployingServices</h3>
+                        </div>
+                        <i class="bi bi-arrow-clockwise fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-gradient bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Com Falha</h6>
+                            <h3 class="mb-0">@failedServices</h3>
+                        </div>
+                        <i class="bi bi-exclamation-triangle fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" placeholder="Buscar serviços..." @bind="searchQuery" @oninput="OnSearchChanged" />
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="d-flex gap-2">
+                <select class="form-select" @bind="statusFilter">
+                    <option value="">Todos os Status</option>
+                    <option value="Running">Em Execução</option>
+                    <option value="Deploying">Implantando</option>
+                    <option value="Stopped">Parado</option>
+                    <option value="Failed">Com Falha</option>
+                    <option value="Draft">Rascunho</option>
+                </select>
+                <select class="form-select" @bind="typeFilter">
+                    <option value="">Todos os Tipos</option>
+                    <option value="REST">REST API</option>
+                    <option value="GraphQL">GraphQL</option>
+                    <option value="Hybrid">Híbrido</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Services List -->
+    @if (loading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+            <p class="mt-3">Carregando serviços...</p>
+        </div>
+    }
+    else if (!filteredServices.Any())
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted mb-3"></i>
+            <h3 class="text-muted">Nenhum serviço encontrado</h3>
+            <p class="text-muted">
+                @if (string.IsNullOrEmpty(searchQuery) && string.IsNullOrEmpty(statusFilter) && string.IsNullOrEmpty(typeFilter))
+                {
+                    <text>Crie seu primeiro serviço para começar.</text>
+                }
+                else
+                {
+                    <text>Nenhum serviço corresponde aos filtros aplicados.</text>
+                }
+            </p>
+            <button class="btn btn-primary btn-lg" @onclick="ShowCreateInterface">
+                <i class="bi bi-plus-circle"></i> Criar Serviço
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var service in filteredServices)
+            {
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card h-100 border-start border-4 @GetStatusBorderClass(service.Status) shadow-sm">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="card-title mb-1 fw-bold">@service.Name</h6>
+                                    <small class="text-muted">v@service.Version • @service.ServiceType</small>
+                                </div>
+                                <span class="badge @GetStatusBadgeClass(service.Status) fs-6">
+                                    @GetStatusIcon(service.Status) @service.Status
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="card-body">
+                            <p class="card-text text-muted small mb-3">@service.Description</p>
+                            
+                            <!-- Service Details -->
+                            <div class="mb-3">
+                                @if (!string.IsNullOrEmpty(service.Endpoint))
+                                {
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-link-45deg text-info me-2"></i>
+                                        <small class="text-truncate">
+                                            <a href="@service.Endpoint" target="_blank" class="text-decoration-none">
+                                                @service.Endpoint
+                                            </a>
+                                        </small>
+                                    </div>
+                                }
+                                
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi @GetHealthIcon(service.IsHealthy) me-2"></i>
+                                    <small>
+                                        Saúde: @(service.IsHealthy ? "Saudável" : "Com problemas")
+                                        @if (service.LastHealthCheck.HasValue)
+                                        {
+                                            <span class="text-muted">(@service.LastHealthCheck.Value.ToString("HH:mm"))</span>
+                                        }
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Tags -->
+                            @if (service.Tags.Any())
+                            {
+                                <div class="mb-3">
+                                    @foreach (var tag in service.Tags.Take(3))
+                                    {
+                                        <span class="badge bg-light text-dark me-1">#@tag</span>
+                                    }
+                                    @if (service.Tags.Count > 3)
+                                    {
+                                        <span class="badge bg-light text-dark">+@(service.Tags.Count - 3)</span>
+                                    }
+                                </div>
+                            }
+
+                            <!-- Timestamp -->
+                            <div class="small text-muted">
+                                <i class="bi bi-calendar-event"></i> 
+                                Criado: @service.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex gap-1 flex-wrap justify-content-between">
+                                <!-- Primary Actions -->
+                                <div class="d-flex gap-1 flex-wrap">
+                                    @if (service.Status == "Draft")
+                                    {
+                                        <button class="btn btn-success btn-sm" @onclick="() => DeployService(service.Id)" title="Implantar">
+                                            <i class="bi bi-rocket"></i>
+                                        </button>
+                                        <button class="btn btn-info btn-sm" @onclick="() => ValidateService(service.Id)" title="Validar">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                    }
+                                    else if (service.Status == "Running")
+                                    {
+                                        <button class="btn btn-warning btn-sm" @onclick="() => StopService(service.Id)" title="Parar">
+                                            <i class="bi bi-stop-circle"></i>
+                                        </button>
+                                        <button class="btn btn-secondary btn-sm" @onclick="() => RestartService(service.Id)" title="Reiniciar">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    }
+                                    else if (service.Status == "Stopped")
+                                    {
+                                        <button class="btn btn-success btn-sm" @onclick="() => DeployService(service.Id)" title="Iniciar">
+                                            <i class="bi bi-play-circle"></i>
+                                        </button>
+                                    }
+
+                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => EditService(service.Id)" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Secondary Actions -->
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><button class="dropdown-item" @onclick="() => ShowMetrics(service.Id)">
+                                            <i class="bi bi-graph-up"></i> Métricas
+                                        </button></li>
+                                        <li><button class="dropdown-item" @onclick="() => ShowLogs(service.Id)">
+                                            <i class="bi bi-file-text"></i> Logs
+                                        </button></li>
+                                        <li><button class="dropdown-item" @onclick="() => CheckHealth(service.Id)">
+                                            <i class="bi bi-heart"></i> Verificar Saúde
+                                        </button></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><button class="dropdown-item text-danger" @onclick="() => DeleteService(service.Id)">
+                                            <i class="bi bi-trash"></i> Deletar
+                                        </button></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Create Interface Modal -->
+@if (showCreateModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-plus-circle"></i> Nova Interface de API
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideCreateModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@newInterfaceRequest" OnValidSubmit="@CreateInterface">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Nome da Interface</label>
+                                    <InputText @bind-Value="newInterfaceRequest.Name" class="form-control" placeholder="Ex: Minha API" />
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Descrição</label>
+                                    <InputTextArea @bind-Value="newInterfaceRequest.Description" class="form-control" rows="3" placeholder="Descrição da interface" />
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Tipo</label>
+                                    <InputSelect @bind-Value="newInterfaceRequest.Type" class="form-select">
+                                        <option value="@ApiType.REST">REST API</option>
+                                        <option value="@ApiType.GraphQL">GraphQL</option>
+                                        <option value="@ApiType.Hybrid">Híbrido</option>
+                                    </InputSelect>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Versão</label>
+                                    <InputText @bind-Value="newInterfaceRequest.Version" class="form-control" placeholder="1.0.0" />
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                @if (newInterfaceRequest.Type != ApiType.GraphQL)
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Arquivo Swagger JSON</label>
+                                        <InputFile OnChange="@OnSwaggerFileSelected" class="form-control" accept=".json" />
+                                        @if (!string.IsNullOrEmpty(selectedSwaggerFileName))
+                                        {
+                                            <small class="text-success mt-1 d-block">? @selectedSwaggerFileName</small>
+                                        }
+                                    </div>
+                                }
+                                
+                                @if (newInterfaceRequest.Type != ApiType.REST)
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">GraphQL Schema</label>
+                                        <InputTextArea @bind-Value="newInterfaceRequest.GraphQLSchema" class="form-control" rows="6" placeholder="type Query { hello: String }" />
+                                    </div>
+                                }
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Tags (separadas por vírgula)</label>
+                                    <input type="text" class="form-control" @bind="tagsInput" placeholder="api, microservice, backend" />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Infrastructure Configuration -->
+                        <div class="row">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-gear"></i> Configuração de Infraestrutura
+                                </h6>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">Banco de Dados</label>
+                                    <InputSelect @bind-Value="newInterfaceRequest.Infrastructure.Database.Type" class="form-select">
+                                        <option value="@DatabaseType.PostgreSQL">PostgreSQL</option>
+                                        <option value="@DatabaseType.MongoDB">MongoDB</option>
+                                        <option value="@DatabaseType.MySQL">MySQL</option>
+                                        <option value="@DatabaseType.SQLServer">SQL Server</option>
+                                        <option value="@DatabaseType.Redis">Redis</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">Cache</label>
+                                    <InputSelect @bind-Value="newInterfaceRequest.Infrastructure.Cache.Type" class="form-select">
+                                        <option value="@CacheType.Redis">Redis</option>
+                                        <option value="@CacheType.Memcached">Memcached</option>
+                                        <option value="@CacheType.InMemory">In Memory</option>
+                                        <option value="@CacheType.None">Nenhum</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">Messaging</label>
+                                    <InputSelect @bind-Value="newInterfaceRequest.Infrastructure.Messaging.Type" class="form-select">
+                                        <option value="@MessagingType.None">Nenhum</option>
+                                        <option value="@MessagingType.Apache_Kafka">Apache Kafka</option>
+                                        <option value="@MessagingType.Azure_ServiceBus">Azure Service Bus</option>
+                                        <option value="@MessagingType.AWS_SQS">AWS SQS</option>
+                                        <option value="@MessagingType.Google_PubSub">Google Pub/Sub</option>
+                                        <option value="@MessagingType.NATS">NATS</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">Autenticação</label>
+                                    <InputSelect @bind-Value="newInterfaceRequest.Security.Authentication.Type" class="form-select">
+                                        <option value="@AuthenticationType.None">Nenhuma</option>
+                                        <option value="@AuthenticationType.JWT">JWT</option>
+                                        <option value="@AuthenticationType.OAuth2">OAuth2</option>
+                                        <option value="@AuthenticationType.ApiKey">API Key</option>
+                                        <option value="@AuthenticationType.Basic">Basic Auth</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle"></i> @errorMessage
+                            </div>
+                        }
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" @onclick="HideCreateModal">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-primary" disabled="@isCreating">
+                                @if (isCreating)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                    <text>Criando...</text>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-plus-circle"></i>
+                                    <text>Criar Interface</text>
+                                }
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Notifications -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+    @foreach (var notification in notifications.TakeLast(3))
+    {
+        <div class="toast show mb-2 border-start border-4 @GetNotificationBorderClass(notification.Type)" role="alert">
+            <div class="toast-header">
+                <i class="bi @GetNotificationIcon(notification.Type) me-2"></i>
+                <strong class="me-auto">@notification.Title</strong>
+                <small>@notification.Timestamp.ToString("HH:mm:ss")</small>
+                <button type="button" class="btn-close" @onclick="() => RemoveNotification(notification)"></button>
+            </div>
+            <div class="toast-body">
+                @notification.Message
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ServiceDefinition> allServices = new();
+    private IEnumerable<ServiceDefinition> filteredServices = new List<ServiceDefinition>();
+    private bool loading = true;
+    private string searchQuery = string.Empty;
+    private string statusFilter = string.Empty;
+    private string typeFilter = string.Empty;
+    private bool showCreateModal = false;
+    private bool isCreating = false;
+    private string errorMessage = string.Empty;
+    private string selectedSwaggerFileName = string.Empty;
+    private string tagsInput = string.Empty;
+    private ApiInterfaceCreateRequest newInterfaceRequest = new();
+    private List<NotificationItem> notifications = new();
+    private HubConnection? hubConnection;
+    private Timer? searchTimer;
+
+    // Statistics
+    private int totalServices => allServices.Count;
+    private int runningServices => allServices.Count(s => s.Status == "Running");
+    private int deployingServices => allServices.Count(s => s.Status == "Deploying");
+    private int failedServices => allServices.Count(s => s.Status == "Failed");
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadServices();
+        await ConnectToSignalR();
+        ApplyFilters();
+    }
+
+    private async Task LoadServices()
+    {
+        try
+        {
+            loading = true;
+            StateHasChanged();
+
+            allServices.Clear();
+
+            // Load API interfaces from the Web API
+            try
+            {
+                var response = await Http.GetAsync("https://localhost:7080/api/interfaces");
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var interfaces = JsonSerializer.Deserialize<List<ApiInterface>>(json, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }) ?? new List<ApiInterface>();
+
+                    // Convert to service definitions
+                    foreach (var apiInterface in interfaces)
+                    {
+                        allServices.Add(new ServiceDefinition
+                        {
+                            Id = apiInterface.Id,
+                            Name = apiInterface.Name,
+                            Description = apiInterface.Description,
+                            ServiceType = apiInterface.Type.ToString(),
+                            Version = apiInterface.Version,
+                            Status = apiInterface.Status.ToString(),
+                            Endpoint = apiInterface.BaseUrl ?? "",
+                            Configuration = apiInterface.Metadata,
+                            Tags = apiInterface.Tags,
+                            CreatedAt = apiInterface.CreatedAt,
+                            LastHealthCheck = apiInterface.LastHealthCheck,
+                            IsHealthy = apiInterface.Status == ApiStatus.Running
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Could not load API interfaces");
+            }
+
+            // Load simple APIs from API service
+            try
+            {
+                var response = await Http.GetAsync("http://localhost:8080/api/apis");
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var simpleApis = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(json, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }) ?? new List<Dictionary<string, object>>();
+
+                    // Convert to service definitions
+                    foreach (var api in simpleApis)
+                    {
+                        allServices.Add(new ServiceDefinition
+                        {
+                            Id = Guid.Parse(api.GetValueOrDefault("id", Guid.NewGuid()).ToString()!),
+                            Name = api.GetValueOrDefault("name", "").ToString()!,
+                            Description = api.GetValueOrDefault("description", "").ToString()!,
+                            ServiceType = "REST (Simple)",
+                            Version = "1.0",
+                            Status = api.GetValueOrDefault("status", "Unknown").ToString()!,
+                            Endpoint = api.GetValueOrDefault("baseUrl", "").ToString()!,
+                            Configuration = new Dictionary<string, object>(),
+                            Tags = new List<string> { "swagger", "api" },
+                            CreatedAt = DateTime.TryParse(api.GetValueOrDefault("createdAt", DateTime.Now).ToString(), out var createdAt) ? createdAt : DateTime.Now,
+                            LastHealthCheck = DateTime.TryParse(api.GetValueOrDefault("lastHealthCheck", null)?.ToString(), out var lastCheck) ? lastCheck : null,
+                            IsHealthy = api.GetValueOrDefault("status", "").ToString() == "Running"
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Could not load simple APIs");
+            }
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            AddNotification("Erro", $"Erro ao carregar serviços: {ex.Message}", "error");
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        filteredServices = allServices.AsEnumerable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            filteredServices = filteredServices.Where(s =>
+                s.Name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                s.Description.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                s.Tags.Any(tag => tag.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        if (!string.IsNullOrEmpty(statusFilter))
+        {
+            filteredServices = filteredServices.Where(s => s.Status == statusFilter);
+        }
+
+        if (!string.IsNullOrEmpty(typeFilter))
+        {
+            filteredServices = filteredServices.Where(s => s.ServiceType.Contains(typeFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        filteredServices = filteredServices.OrderByDescending(s => s.CreatedAt).ToList();
+        StateHasChanged();
+    }
+
+    private async Task RefreshServices()
+    {
+        await LoadServices();
+        AddNotification("Sucesso", "Serviços atualizados", "success");
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? string.Empty;
+        
+        searchTimer?.Dispose();
+        searchTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(() =>
+            {
+                ApplyFilters();
+            });
+        }, null, TimeSpan.FromMilliseconds(500), Timeout.InfiniteTimeSpan);
+    }
+
+    private void ShowCreateInterface()
+    {
+        newInterfaceRequest = new ApiInterfaceCreateRequest
+        {
+            Infrastructure = new InfrastructureConfig
+            {
+                Database = new DatabaseConfig { Type = DatabaseType.PostgreSQL },
+                Cache = new CacheConfig { Type = CacheType.Redis },
+                Messaging = new MessagingConfig { Type = MessagingType.None },
+                Storage = new StorageConfig { Type = StorageType.None },
+                Scaling = new ScalingConfig()
+            },
+            Security = new SecurityConfig
+            {
+                Authentication = new AuthenticationConfig { Type = AuthenticationType.JWT },
+                Authorization = new AuthorizationConfig(),
+                Encryption = new EncryptionConfig(),
+                RateLimit = new RateLimitConfig(),
+                Cors = new CorsConfig()
+            },
+            Monitoring = new MonitoringConfig()
+        };
+        showCreateModal = true;
+    }
+
+    private void HideCreateModal()
+    {
+        showCreateModal = false;
+        errorMessage = string.Empty;
+        selectedSwaggerFileName = string.Empty;
+        tagsInput = string.Empty;
+    }
+
+    private async Task OnSwaggerFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            try
+            {
+                if (file.Size > 10 * 1024 * 1024) // 10MB max
+                {
+                    errorMessage = "Arquivo muito grande. Máximo permitido: 10MB";
+                    return;
+                }
+
+                using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+                using var reader = new StreamReader(stream);
+                newInterfaceRequest.SwaggerJson = await reader.ReadToEndAsync();
+                
+                // Validate JSON
+                JsonDocument.Parse(newInterfaceRequest.SwaggerJson);
+                
+                selectedSwaggerFileName = file.Name;
+                errorMessage = string.Empty;
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Erro ao ler arquivo: {ex.Message}";
+                selectedSwaggerFileName = string.Empty;
+                newInterfaceRequest.SwaggerJson = string.Empty;
+            }
+        }
+    }
+
+    private async Task CreateInterface()
+    {
+        if (string.IsNullOrWhiteSpace(newInterfaceRequest.Name))
+        {
+            errorMessage = "Nome é obrigatório";
+            return;
+        }
+
+        if (newInterfaceRequest.Type != ApiType.GraphQL && string.IsNullOrWhiteSpace(newInterfaceRequest.SwaggerJson))
+        {
+            errorMessage = "Arquivo Swagger é obrigatório para APIs REST";
+            return;
+        }
+
+        if (newInterfaceRequest.Type != ApiType.REST && string.IsNullOrWhiteSpace(newInterfaceRequest.GraphQLSchema))
+        {
+            errorMessage = "Schema GraphQL é obrigatório para APIs GraphQL";
+            return;
+        }
+
+        isCreating = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            // Parse tags
+            if (!string.IsNullOrWhiteSpace(tagsInput))
+            {
+                newInterfaceRequest.Tags = tagsInput.Split(',')
+                    .Select(tag => tag.Trim())
+                    .Where(tag => !string.IsNullOrEmpty(tag))
+                    .ToList();
+            }
+
+            var json = JsonSerializer.Serialize(newInterfaceRequest);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            
+            var response = await Http.PostAsync("https://localhost:7080/api/interfaces", content);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                HideCreateModal();
+                await LoadServices();
+                AddNotification("Sucesso", "Interface criada com sucesso!", "success");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Erro ao criar interface: {error}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro: {ex.Message}";
+        }
+        finally
+        {
+            isCreating = false;
+        }
+    }
+
+    private async Task DeployService(Guid id)
+    {
+        try
+        {
+            var response = await Http.PostAsync($"https://localhost:7080/api/interfaces/{id}/deploy", null);
+            if (response.IsSuccessStatusCode)
+            {
+                AddNotification("Sucesso", "Implantação iniciada!", "success");
+                await LoadServices();
+            }
+            else
+            {
+                AddNotification("Erro", "Erro ao iniciar implantação", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            AddNotification("Erro", $"Erro ao implantar serviço: {ex.Message}", "error");
+        }
+    }
+
+    private async Task StopService(Guid id)
+    {
+        try
+        {
+            var response = await Http.PostAsync($"https://localhost:7080/api/interfaces/{id}/stop", null);
+            if (response.IsSuccessStatusCode)
+            {
+                AddNotification("Sucesso", "Serviço parado!", "success");
+                await LoadServices();
+            }
+        }
+        catch (Exception ex)
+        {
+            AddNotification("Erro", $"Erro ao parar serviço: {ex.Message}", "error");
+        }
+    }
+
+    private async Task RestartService(Guid id)
+    {
+        try
+        {
+            var response = await Http.PostAsync($"https://localhost:7080/api/interfaces/{id}/restart", null);
+            if (response.IsSuccessStatusCode)
+            {
+                AddNotification("Sucesso", "Serviço reiniciado!", "success");
+                await LoadServices();
+            }
+        }
+        catch (Exception ex)
+        {
+            AddNotification("Erro", $"Erro ao reiniciar serviço: {ex.Message}", "error");
+        }
+    }
+
+    private async Task ValidateService(Guid id)
+    {
+        try
+        {
+            var response = await Http.PostAsync($"https://localhost:7080/api/interfaces/{id}/validate", null);
+            if (response.IsSuccessStatusCode)
+            {
+                AddNotification("Sucesso", "Validação concluída!", "success");
+                await LoadServices();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                AddNotification("Erro", $"Erro de validação: {error}", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            AddNotification("Erro", $"Erro ao validar: {ex.Message}", "error");
+        }
+    }
+
+    private async Task DeleteService(Guid id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Tem certeza que deseja deletar este serviço?");
+        if (confirmed)
+        {
+            try
+            {
+                var response = await Http.DeleteAsync($"https://localhost:7080/api/interfaces/{id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    AddNotification("Sucesso", "Serviço deletado!", "success");
+                    await LoadServices();
+                }
+            }
+            catch (Exception ex)
+            {
+                AddNotification("Erro", $"Erro ao deletar serviço: {ex.Message}", "error");
+            }
+        }
+    }
+
+    private async Task EditService(Guid id)
+    {
+        Navigation.NavigateTo($"/edit-interface/{id}");
+    }
+
+    private async Task ShowMetrics(Guid id)
+    {
+        Navigation.NavigateTo($"/metrics/{id}");
+    }
+
+    private async Task ShowLogs(Guid id)
+    {
+        Navigation.NavigateTo($"/logs/{id}");
+    }
+
+    private async Task CheckHealth(Guid id)
+    {
+        try
+        {
+            var response = await Http.GetAsync($"https://localhost:7080/api/interfaces/{id}/metrics");
+            if (response.IsSuccessStatusCode)
+            {
+                AddNotification("Info", "Verificação de saúde concluída", "info");
+                await LoadServices();
+            }
+        }
+        catch (Exception ex)
+        {
+            AddNotification("Erro", $"Erro ao verificar saúde: {ex.Message}", "error");
+        }
+    }
+
+    private async Task ConnectToSignalR()
+    {
+        try
+        {
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl("https://localhost:7080/notifications")
+                .Build();
+
+            hubConnection.On<object>("InterfaceStatusChanged", async (data) =>
+            {
+                AddNotification("Status", "Status do serviço atualizado", "info");
+                await LoadServices();
+                await InvokeAsync(StateHasChanged);
+            });
+
+            hubConnection.On<object>("Error", (data) =>
+            {
+                var json = JsonSerializer.Serialize(data);
+                var notification = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+                AddNotification("Erro", notification?["Message"]?.ToString() ?? "Erro desconhecido", "error");
+                InvokeAsync(StateHasChanged);
+            });
+
+            await hubConnection.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            AddNotification("Aviso", $"Conexão com notificações falhou: {ex.Message}", "warning");
+        }
+    }
+
+    private void AddNotification(string title, string message, string type)
+    {
+        notifications.Add(new NotificationItem
+        {
+            Title = title,
+            Message = message,
+            Type = type,
+            Timestamp = DateTime.Now
+        });
+
+        if (notifications.Count > 10)
+        {
+            notifications.RemoveAt(0);
+        }
+
+        StateHasChanged();
+    }
+
+    private void RemoveNotification(NotificationItem notification)
+    {
+        notifications.Remove(notification);
+        StateHasChanged();
+    }
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Running" => "bg-success",
+        "Deploying" => "bg-warning",
+        "Failed" => "bg-danger",
+        "Stopped" => "bg-secondary",
+        "Validating" => "bg-info",
+        "Updating" => "bg-primary",
+        _ => "bg-light text-dark"
+    };
+
+    private string GetStatusBorderClass(string status) => status switch
+    {
+        "Running" => "border-success",
+        "Deploying" => "border-warning",
+        "Failed" => "border-danger",
+        "Stopped" => "border-secondary",
+        "Validating" => "border-info",
+        "Updating" => "border-primary",
+        _ => "border-light"
+    };
+
+    private string GetStatusIcon(string status) => status switch
+    {
+        "Running" => "?",
+        "Deploying" => "?",
+        "Failed" => "?",
+        "Stopped" => "??",
+        "Validating" => "??",
+        "Updating" => "??",
+        _ => "?"
+    };
+
+    private string GetHealthIcon(bool isHealthy) => isHealthy ? "bi-heart-fill text-success" : "bi-heart text-danger";
+
+    private string GetNotificationIcon(string type) => type switch
+    {
+        "success" => "bi-check-circle-fill text-success",
+        "warning" => "bi-exclamation-triangle-fill text-warning",
+        "error" => "bi-x-circle-fill text-danger",
+        _ => "bi-info-circle-fill text-info"
+    };
+
+    private string GetNotificationBorderClass(string type) => type switch
+    {
+        "success" => "border-success",
+        "warning" => "border-warning",
+        "error" => "border-danger",
+        _ => "border-info"
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        searchTimer?.Dispose();
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}

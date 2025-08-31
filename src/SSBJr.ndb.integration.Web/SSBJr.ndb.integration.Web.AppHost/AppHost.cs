@@ -23,11 +23,4 @@ var blazorApp = builder.AddProject<Projects.SSBJr_ndb_integration_Blazor>("blazo
     .WithReference(apiService)
     .WaitFor(apiService);
 
-// NOTA: React App desabilitado temporariamente para evitar problemas de build
-// Para executar o React manualmente:
-// 1. cd SSBJr.ndb.integration.React
-// 2. npm install
-// 3. npm run dev
-Console.WriteLine("React App está desabilitado no AppHost. Execute manualmente com: cd SSBJr.ndb.integration.React && npm run dev");
-
 builder.Build().Run();

@@ -24,7 +24,7 @@ public class NotificationService : INotificationService
     {
         _logger.LogInformation("API {ApiId} status changed to {Status}", apiId, status);
         
-        await _hubContext.Clients.All.SendAsync("ApiStatusChanged", new
+        await _hubContext.Clients.All.SendAsync("InterfaceStatusChanged", new
         {
             ApiId = apiId,
             Status = status,
@@ -56,18 +56,5 @@ public class NotificationService : INotificationService
             Details = details,
             Timestamp = DateTime.UtcNow
         });
-    }
-}
-
-public class NotificationHub : Hub
-{
-    public async Task JoinGroup(string groupName)
-    {
-        await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-    }
-
-    public async Task LeaveGroup(string groupName)
-    {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
     }
 }

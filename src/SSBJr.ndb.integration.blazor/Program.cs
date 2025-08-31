@@ -7,24 +7,12 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Add configuration
-builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
-{
-    ["ApiSettings:BaseUrl"] = "https://localhost:7080"
-});
-
-// Register HttpClient with base address
+// Configure HttpClient with base address
+// In WebAssembly Blazor, we use the hosting environment's base address
+// which should be configured by Aspire to proxy to the correct API service
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-// Register additional HttpClient for API calls
-builder.Services.AddScoped<HttpClient>(sp =>
-{
-    var client = new HttpClient();
-    client.BaseAddress = new Uri("https://localhost:7080");
-    return client;
-});
-
-// Register API Interface Service
+// Register services
 builder.Services.AddScoped<IApiInterfaceService, ApiInterfaceService>();
 
 // Add logging

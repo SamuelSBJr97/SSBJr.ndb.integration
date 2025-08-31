@@ -1,5 +1,20 @@
 namespace SSBJr.ndb.integration.Blazor.Models;
 
+// ApiDefinition from ApiService - needed for compatibility
+public class ApiDefinition
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string SwaggerJson { get; set; } = string.Empty;
+    public string BaseUrl { get; set; } = string.Empty;
+    public ApiStatus Status { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastHealthCheck { get; set; }
+    public string? ErrorMessage { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
 public class ApiInterface
 {
     public Guid Id { get; set; }

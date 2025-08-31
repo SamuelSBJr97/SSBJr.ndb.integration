@@ -39,10 +39,13 @@ public class InfrastructureViewModel : BaseViewModel
     private string _name = "Infrastructure";
     private string _status = "Healthy";
     private bool _isRecommended = true;
+    private string _icon = "cloud";
     private InfrastructureTemplate? _selectedTemplate;
     private SystemHealth? _systemHealth;
     private ObservableCollection<InfrastructureTemplate> _templates = new();
     private ObservableCollection<ApiInterface> _apiInterfaces = new();
+    private string _description = string.Empty;
+    private Dictionary<string, object> _configuration = new();
 
     public InfrastructureViewModel(
         IInfrastructureService infrastructureService,
@@ -95,6 +98,12 @@ public class InfrastructureViewModel : BaseViewModel
         set => SetProperty(ref _isRecommended, value);
     }
 
+    public string Icon
+    {
+        get => _icon;
+        set => SetProperty(ref _icon, value);
+    }
+
     public InfrastructureTemplate? SelectedTemplate
     {
         get => _selectedTemplate;
@@ -127,6 +136,46 @@ public class InfrastructureViewModel : BaseViewModel
     public ICommand TestDatabaseCommand { get; }
     public ICommand TestMessagingCommand { get; }
     public ICommand TestCacheCommand { get; }
+
+    public string Description
+    {
+        get => _description;
+        set => SetProperty(ref _description, value);
+    }
+
+    public string DisplayDatabaseType
+    {
+        get
+        {
+            try
+            {
+                if (Configuration.TryGetValue("DatabaseType", out var db))
+                {
+                    return db?.ToString() ?? "Unknown";
+                }
+            }
+            catch { }
+            return "Unknown";
+        }
+    }
+
+    // Notify when configuration changes
+    private void OnConfigurationChanged()
+    {
+        OnPropertyChanged(nameof(DisplayDatabaseType));
+    }
+
+    public Dictionary<string, object> Configuration
+    {
+        get => _configuration;
+        set
+        {
+            if (SetProperty(ref _configuration, value))
+            {
+                OnConfigurationChanged();
+            }
+        }
+    }
 
     public async Task InitializeAsync()
     {

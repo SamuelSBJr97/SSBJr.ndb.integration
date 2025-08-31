@@ -9,6 +9,7 @@
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @inject ILogger<Services> Logger
+@inject IApiInterfaceService ApiInterfaceService
 
 <PageTitle>Serviços Disponíveis</PageTitle>
 
@@ -498,87 +499,23 @@
 
             allServices.Clear();
 
-            // Load API interfaces from the Web API
+            // Load all services using the ApiInterfaceService
             try
             {
-                var response = await Http.GetAsync("https://localhost:7080/api/interfaces");
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadAsStringAsync();
-                    var interfaces = JsonSerializer.Deserialize<List<ApiInterface>>(json, new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    }) ?? new List<ApiInterface>();
-
-                    // Convert to service definitions
-                    foreach (var apiInterface in interfaces)
-                    {
-                        allServices.Add(new ServiceDefinition
-                        {
-                            Id = apiInterface.Id,
-                            Name = apiInterface.Name,
-                            Description = apiInterface.Description,
-                            ServiceType = apiInterface.Type.ToString(),
-                            Version = apiInterface.Version,
-                            Status = apiInterface.Status.ToString(),
-                            Endpoint = apiInterface.BaseUrl ?? "",
-                            Configuration = apiInterface.Metadata,
-                            Tags = apiInterface.Tags,
-                            CreatedAt = apiInterface.CreatedAt,
-                            LastHealthCheck = apiInterface.LastHealthCheck,
-                            IsHealthy = apiInterface.Status == ApiStatus.Running
-                        });
-                    }
-                }
+                var services = await ApiInterfaceService.GetAllServicesAsync();
+                allServices.AddRange(services);
             }
             catch (Exception ex)
             {
-                Logger.LogWarning(ex, "Could not load API interfaces");
-            }
-
-            // Load simple APIs from API service
-            try
-            {
-                var response = await Http.GetAsync("http://localhost:8080/api/apis");
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadAsStringAsync();
-                    var simpleApis = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(json, new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    }) ?? new List<Dictionary<string, object>>();
-
-                    // Convert to service definitions
-                    foreach (var api in simpleApis)
-                    {
-                        allServices.Add(new ServiceDefinition
-                        {
-                            Id = Guid.Parse(api.GetValueOrDefault("id", Guid.NewGuid()).ToString()!),
-                            Name = api.GetValueOrDefault("name", "").ToString()!,
-                            Description = api.GetValueOrDefault("description", "").ToString()!,
-                            ServiceType = "REST (Simple)",
-                            Version = "1.0",
-                            Status = api.GetValueOrDefault("status", "Unknown").ToString()!,
-                            Endpoint = api.GetValueOrDefault("baseUrl", "").ToString()!,
-                            Configuration = new Dictionary<string, object>(),
-                            Tags = new List<string> { "swagger", "api" },
-                            CreatedAt = DateTime.TryParse(api.GetValueOrDefault("createdAt", DateTime.Now).ToString(), out var createdAt) ? createdAt : DateTime.Now,
-                            LastHealthCheck = DateTime.TryParse(api.GetValueOrDefault("lastHealthCheck", null)?.ToString(), out var lastCheck) ? lastCheck : null,
-                            IsHealthy = api.GetValueOrDefault("status", "").ToString() == "Running"
-                        });
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "Could not load simple APIs");
+                Logger.LogError(ex, "Error loading services from ApiInterfaceService");
+                AddNotification("Erro", $"Erro ao carregar serviços: {ex.Message}", "error");
             }
 
             ApplyFilters();
         }
         catch (Exception ex)
         {
-            AddNotification("Erro", $"Erro ao carregar serviços: {ex.Message}", "error");
+            AddNotification("Erro", $"Erro geral ao carregar serviços: {ex.Message}", "error");
         }
         finally
         {

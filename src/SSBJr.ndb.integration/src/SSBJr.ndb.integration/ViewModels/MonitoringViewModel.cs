@@ -20,6 +20,10 @@ public class MonitoringViewModel : BaseViewModel
     private ObservableCollection<RecentActivity> _recentActivities = new();
     private bool _isRefreshing;
     private string _name = "Monitoring";
+    private string _status = "Healthy";
+    private DateTime _lastUpdated = DateTime.UtcNow;
+    private int _responseTime;
+    private string _icon = "heart";
 
     public MonitoringViewModel(
         IApiService apiService,
@@ -114,6 +118,12 @@ public class MonitoringViewModel : BaseViewModel
         set => SetProperty(ref _name, value);
     }
 
+    public string Status
+    {
+        get => _status;
+        set => SetProperty(ref _status, value);
+    }
+
     public ObservableCollection<ApiStatus> ApiStatuses
     {
         get => _apiStatuses;
@@ -132,6 +142,24 @@ public class MonitoringViewModel : BaseViewModel
     public ICommand ViewSystemLogsCommand { get; }
     public ICommand ConfigureAlertsCommand { get; }
     public ICommand ViewReportsCommand { get; }
+
+    public DateTime LastUpdated
+    {
+        get => _lastUpdated;
+        set => SetProperty(ref _lastUpdated, value);
+    }
+
+    public int ResponseTime
+    {
+        get => _responseTime;
+        set => SetProperty(ref _responseTime, value);
+    }
+
+    public string Icon
+    {
+        get => _icon;
+        set => SetProperty(ref _icon, value);
+    }
 
     public async Task InitializeAsync()
     {

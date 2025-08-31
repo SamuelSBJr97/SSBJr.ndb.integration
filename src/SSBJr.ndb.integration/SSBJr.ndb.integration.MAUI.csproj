@@ -30,6 +30,9 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
+
+		<!-- Exclude sibling project folders from default globbing -->
+		<DefaultItemExcludes>$(MSBuildThisFileDirectory)..\SSBJr.ndb.integration.Blazor\**\*;$(MSBuildThisFileDirectory)..\SSBJr.ndb.integration.blazor\**\*;$(DefaultItemExcludes)</DefaultItemExcludes>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -83,9 +86,19 @@
 	  </MauiXaml>
 	</ItemGroup>
 
+	<!-- Exclude sibling Blazor project files from MAUI global includes -->
 	<ItemGroup>
-	  <None Include="src\SSBJr.ndb.integration.Blazor.Tests\SSBJr.ndb.integration.Blazor.Tests.csproj" />
-	  <None Include="src\SSBJr.ndb.integration.Blazor\SSBJr.ndb.integration.Blazor.csproj" />
+		<Compile Remove="$(MSBuildThisFileDirectory)..\SSBJr.ndb.integration.Blazor\**\*.cs" />
+		<EmbeddedResource Remove="$(MSBuildThisFileDirectory)..\SSBJr.ndb.integration.Blazor\**\*" />
+		<None Remove="$(MSBuildThisFileDirectory)..\SSBJr.ndb.integration.Blazor\**\*" />
+
+		<Compile Remove="$(MSBuildThisFileDirectory)..\SSBJr.ndb.integration.blazor\**\*.cs" />
+		<EmbeddedResource Remove="$(MSBuildThisFileDirectory)..\SSBJr.ndb.integration.blazor\**\*" />
+		<None Remove="$(MSBuildThisFileDirectory)..\SSBJr.ndb.integration.blazor\**\*" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="src\SSBJr.ndb.integration.Blazor\Pages\" />
+	  <Folder Include="src\SSBJr.ndb.integration.Web\SSBJr.ndb.integration.Web.ApiService\" />
 	</ItemGroup>
 
 </Project>

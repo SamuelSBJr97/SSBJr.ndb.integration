@@ -18,4 +18,10 @@ public partial class DatabaseConfigPage : ContentPage
         base.OnAppearing();
         await _viewModel.InitializeAsync();
     }
+
+    private void OnAdvancedToggleClicked(object sender, EventArgs e)
+    {
+        // Toggle advanced settings visibility
+        _viewModel.IsAdvancedVisible = !_viewModel.IsAdvancedVisible;
+    }
 }

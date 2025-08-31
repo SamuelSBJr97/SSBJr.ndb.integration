@@ -4,7 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:SSBJr.ndb.integration.ViewModels"
              x:DataType="viewmodels:SettingsViewModel"
-             Title="?? Configurações"
+             Title="âš™ï¸ ConfiguraÃ§Ãµes"
              Shell.BackgroundColor="{StaticResource Primary}">
 
     <ScrollView>
@@ -16,7 +16,7 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="?? Configurações do App"
+                    <Label Text="âš™ï¸ ConfiguraÃ§Ãµes do App"
                            FontSize="24"
                            FontAttributes="Bold"
                            TextColor="White"
@@ -35,7 +35,7 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="?? Configuração da API"
+                    <Label Text="ðŸŒ ConfiguraÃ§Ã£o da API"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
@@ -59,7 +59,7 @@
                            FontSize="12"
                            TextColor="Gray" />
 
-                    <Button Text="?? Testar Conexão com API"
+                    <Button Text="ðŸ§ª Testar ConexÃ£o com API"
                             Command="{Binding TestApiConnectionCommand}"
                             BackgroundColor="Orange"
                             TextColor="White"
@@ -74,7 +74,7 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="?? Comportamento do App"
+                    <Label Text="ðŸ“± Comportamento do App"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
@@ -87,7 +87,7 @@
                         </Grid.ColumnDefinitions>
                         
                         <Label Grid.Column="0"
-                               Text="Atualização Automática"
+                               Text="AtualizaÃ§Ã£o AutomÃ¡tica"
                                VerticalOptions="Center" />
                         <Switch Grid.Column="1"
                                 IsToggled="{Binding EnableAutoRefresh}" />
@@ -95,7 +95,7 @@
 
                     <!-- Auto Refresh Interval -->
                     <StackLayout IsVisible="{Binding EnableAutoRefresh}">
-                        <Label Text="Intervalo de Atualização (segundos)" />
+                        <Label Text="Intervalo de AtualizaÃ§Ã£o (segundos)" />
                         <Slider Minimum="5" Maximum="300" Value="{Binding AutoRefreshInterval}" />
                         <Label Text="{Binding AutoRefreshInterval, StringFormat='Intervalo: {0:F0} segundos'}"
                                FontSize="12"
@@ -110,7 +110,7 @@
                         </Grid.ColumnDefinitions>
                         
                         <Label Grid.Column="0"
-                               Text="Notificações"
+                               Text="NotificaÃ§Ãµes"
                                VerticalOptions="Center" />
                         <Switch Grid.Column="1"
                                 IsToggled="{Binding EnableNotifications}" />
@@ -138,7 +138,7 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="?? Cache e Dados"
+                    <Label Text="ðŸ’¾ Cache e Dados"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
@@ -153,21 +153,21 @@
                            TextColor="Gray"
                            Margin="0,0,0,10" />
 
-                    <Button Text="??? Limpar Cache"
+                    <Button Text="ðŸ—‘ï¸ Limpar Cache"
                             Command="{Binding ClearCacheCommand}"
                             BackgroundColor="{StaticResource Warning}"
                             TextColor="White"
                             CornerRadius="8"
                             Margin="0,5" />
 
-                    <Button Text="?? Exportar Configurações"
+                    <Button Text="ðŸ“¤ Exportar ConfiguraÃ§Ãµes"
                             Command="{Binding ExportSettingsCommand}"
                             BackgroundColor="{StaticResource Secondary}"
                             TextColor="White"
                             CornerRadius="8"
                             Margin="0,5" />
 
-                    <Button Text="?? Importar Configurações"
+                    <Button Text="ðŸ“¥ Importar ConfiguraÃ§Ãµes"
                             Command="{Binding ImportSettingsCommand}"
                             BackgroundColor="{StaticResource Primary}"
                             TextColor="White"
@@ -182,13 +182,13 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="?? Sobre o App"
+                    <Label Text="â„¹ï¸ Sobre o App"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
 
                     <StackLayout Orientation="Horizontal" Margin="0,15,0,5">
-                        <Label Text="Versão:"
+                        <Label Text="VersÃ£o:"
                                FontSize="14"
                                FontAttributes="Bold"
                                WidthRequest="80" />
@@ -217,7 +217,7 @@
                                TextColor="Gray" />
                     </StackLayout>
 
-                    <Button Text="?? Suporte"
+                    <Button Text="ðŸ“ž Suporte"
                             Command="{Binding ContactSupportCommand}"
                             BackgroundColor="{StaticResource Success}"
                             TextColor="White"
@@ -228,14 +228,14 @@
 
             <!-- Action Buttons -->
             <StackLayout Orientation="Horizontal" Spacing="10">
-                <Button Text="?? Salvar Todas"
+                <Button Text="ðŸ’¾ Salvar Todas"
                         Command="{Binding SaveAllCommand}"
                         BackgroundColor="Green"
                         TextColor="White"
                         CornerRadius="8"
                         HorizontalOptions="FillAndExpand" />
 
-                <Button Text="?? Restaurar Padrões"
+                <Button Text="ðŸ”„ Restaurar PadrÃµes"
                         Command="{Binding ResetToDefaultsCommand}"
                         BackgroundColor="Gray"
                         TextColor="White"

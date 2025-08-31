@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SSBJr.ndb.integration.Web.ApiService\SSBJr.ndb.integration.Web.ApiService.csproj" />
-    <ProjectReference Include="..\SSBJr.ndb.integration.Web\SSBJr.ndb.integration.Web.csproj" />
     <ProjectReference Include="..\..\SSBJr.ndb.integration.Blazor\SSBJr.ndb.integration.Blazor.csproj" />
   </ItemGroup>
 

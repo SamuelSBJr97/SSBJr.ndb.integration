@@ -4,7 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:SSBJr.ndb.integration.ViewModels"
              x:DataType="viewmodels:ApiDetailViewModel"
-             Title="?? Detalhes da API"
+             Title="📊 Detalhes da API"
              Shell.BackgroundColor="{StaticResource Primary}">
 
     <ScrollView>
@@ -16,7 +16,7 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="{Binding ApiName, StringFormat='?? {0}'}"
+                    <Label Text="{Binding ApiName, StringFormat='📊 {0}'}"
                            FontSize="24"
                            FontAttributes="Bold"
                            TextColor="White"
@@ -44,7 +44,7 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="?? Estat�sticas R�pidas"
+                    <Label Text="📈 Estatísticas Rápidas"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
@@ -54,7 +54,7 @@
                         <!-- Response Time -->
                         <Frame Grid.Row="0" Grid.Column="0" BackgroundColor="{StaticResource Success}" CornerRadius="10" Padding="15">
                             <StackLayout>
-                                <Label Text="?" FontSize="24" HorizontalOptions="Center" />
+                                <Label Text="⏱️" FontSize="24" HorizontalOptions="Center" />
                                 <Label Text="{Binding ResponseTime, StringFormat='{0}ms'}" FontSize="18" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center" />
                                 <Label Text="Tempo Resposta" FontSize="12" TextColor="White" HorizontalOptions="Center" />
                             </StackLayout>
@@ -63,7 +63,7 @@
                         <!-- Requests Today -->
                         <Frame Grid.Row="0" Grid.Column="1" BackgroundColor="{StaticResource Primary}" CornerRadius="10" Padding="15">
                             <StackLayout>
-                                <Label Text="??" FontSize="24" HorizontalOptions="Center" />
+                                <Label Text="📊" FontSize="24" HorizontalOptions="Center" />
                                 <Label Text="{Binding RequestsToday}" FontSize="18" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center" />
                                 <Label Text="Requests Hoje" FontSize="12" TextColor="White" HorizontalOptions="Center" />
                             </StackLayout>
@@ -72,7 +72,7 @@
                         <!-- Uptime -->
                         <Frame Grid.Row="1" Grid.Column="0" BackgroundColor="{StaticResource Secondary}" CornerRadius="10" Padding="15">
                             <StackLayout>
-                                <Label Text="?" FontSize="24" HorizontalOptions="Center" />
+                                <Label Text="⬆️" FontSize="24" HorizontalOptions="Center" />
                                 <Label Text="{Binding Uptime}" FontSize="18" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center" />
                                 <Label Text="Uptime" FontSize="12" TextColor="White" HorizontalOptions="Center" />
                             </StackLayout>
@@ -81,7 +81,7 @@
                         <!-- Error Rate -->
                         <Frame Grid.Row="1" Grid.Column="1" BackgroundColor="{Binding ErrorRateColor}" CornerRadius="10" Padding="15">
                             <StackLayout>
-                                <Label Text="??" FontSize="24" HorizontalOptions="Center" />
+                                <Label Text="❌" FontSize="24" HorizontalOptions="Center" />
                                 <Label Text="{Binding ErrorRate, StringFormat='{0:F1}%'}" FontSize="18" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center" />
                                 <Label Text="Taxa de Erro" FontSize="12" TextColor="White" HorizontalOptions="Center" />
                             </StackLayout>
@@ -96,7 +96,7 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="??? Status da Infraestrutura"
+                    <Label Text="🏗️ Status da Infraestrutura"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
@@ -104,7 +104,7 @@
                     <!-- Database Status -->
                     <Grid Margin="0,15,0,10" ColumnDefinitions="Auto,*,Auto">
                         <Label Grid.Column="0"
-                               Text="???"
+                               Text="🗄️"
                                FontSize="20"
                                VerticalOptions="Center" />
                         <StackLayout Grid.Column="1" Margin="15,0,0,0">
@@ -126,7 +126,7 @@
                     <Grid Margin="0,10" ColumnDefinitions="Auto,*,Auto"
                           IsVisible="{Binding HasMessaging}">
                         <Label Grid.Column="0"
-                               Text="??"
+                               Text="📨"
                                FontSize="20"
                                VerticalOptions="Center" />
                         <StackLayout Grid.Column="1" Margin="15,0,0,0">
@@ -148,7 +148,7 @@
                     <Grid Margin="0,10" ColumnDefinitions="Auto,*,Auto"
                           IsVisible="{Binding HasCache}">
                         <Label Grid.Column="0"
-                               Text="?"
+                               Text="💾"
                                FontSize="20"
                                VerticalOptions="Center" />
                         <StackLayout Grid.Column="1" Margin="15,0,0,0">
@@ -174,32 +174,32 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="??? A��es"
+                    <Label Text="🔧 Ações"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
 
                     <StackLayout Spacing="10" Margin="0,15,0,0">
-                        <Button Text="??? Configurar Infraestrutura"
+                        <Button Text="⚙️ Configurar Infraestrutura"
                                 Command="{Binding ConfigureInfrastructureCommand}"
                                 BackgroundColor="{StaticResource Primary}"
                                 TextColor="White"
                                 CornerRadius="8" />
 
-                        <Button Text="?? Ver M�tricas Detalhadas"
+                        <Button Text="📈 Ver Métricas Detalhadas"
                                 Command="{Binding ViewMetricsCommand}"
                                 BackgroundColor="{StaticResource Secondary}"
                                 TextColor="White"
                                 CornerRadius="8" />
 
-                        <Button Text="?? Ver Logs"
+                        <Button Text="📋 Ver Logs"
                                 Command="{Binding ViewLogsCommand}"
                                 BackgroundColor="{StaticResource Warning}"
                                 TextColor="White"
                                 CornerRadius="8" />
 
                         <StackLayout Orientation="Horizontal" Spacing="10">
-                            <Button Text="?? Deploy"
+                            <Button Text="🚀 Deploy"
                                     Command="{Binding DeployCommand}"
                                     BackgroundColor="Green"
                                     TextColor="White"
@@ -207,7 +207,7 @@
                                     HorizontalOptions="FillAndExpand"
                                     IsVisible="{Binding CanDeploy}" />
 
-                            <Button Text="?? Parar"
+                            <Button Text="⏹️ Parar"
                                     Command="{Binding StopCommand}"
                                     BackgroundColor="Red"
                                     TextColor="White"
@@ -215,7 +215,7 @@
                                     HorizontalOptions="FillAndExpand"
                                     IsVisible="{Binding CanStop}" />
 
-                            <Button Text="?? Reiniciar"
+                            <Button Text="🔄 Reiniciar"
                                     Command="{Binding RestartCommand}"
                                     BackgroundColor="Orange"
                                     TextColor="White"

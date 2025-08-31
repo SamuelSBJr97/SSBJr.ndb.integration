@@ -4,7 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:SSBJr.ndb.integration.ViewModels"
              x:DataType="viewmodels:InfrastructureViewModel"
-             Title="??? Gerenciamento de Infraestrutura"
+             Title="🏗️ Gerenciamento de Infraestrutura"
              Shell.BackgroundColor="{StaticResource Primary}">
 
     <Grid>
@@ -17,7 +17,7 @@
                        Padding="20"
                        HasShadow="True">
                     <StackLayout>
-                        <Label Text="??? Infraestrutura de APIs"
+                        <Label Text="🏗️ Infraestrutura de APIs"
                                FontSize="24"
                                FontAttributes="Bold"
                                TextColor="White"
@@ -44,11 +44,11 @@
                             </Grid.ColumnDefinitions>
                             
                             <StackLayout Grid.Column="0">
-                                <Label Text="?? Sa�de do Sistema"
+                                <Label Text="💚 Saúde do Sistema"
                                        FontSize="18"
                                        FontAttributes="Bold"
                                        TextColor="{StaticResource Primary}" />
-                                <Label Text="{Binding SystemHealth.LastCheck, StringFormat='�ltima verifica��o: {0:HH:mm:ss}'}"
+                                <Label Text="{Binding SystemHealth.LastCheck, StringFormat='Última verificação: {0:HH:mm:ss}'}"
                                        FontSize="12"
                                        TextColor="Gray" />
                             </StackLayout>
@@ -66,16 +66,16 @@
                                 <DataTemplate>
                                     <Grid Padding="0,5" ColumnDefinitions="Auto,*,Auto">
                                         <Label Grid.Column="0"
-                                               Text="{Binding Value.IsHealthy, Converter={StaticResource BoolToEmojiConverter}}"
+                                               Text="✅"
                                                FontSize="16"
                                                VerticalOptions="Center" />
                                         <Label Grid.Column="1"
-                                               Text="{Binding Key}"
+                                               Text="{Binding Name}"
                                                FontSize="14"
                                                VerticalOptions="Center"
                                                Margin="10,0" />
                                         <Label Grid.Column="2"
-                                               Text="{Binding Value.Status}"
+                                               Text="{Binding Status}"
                                                FontSize="12"
                                                TextColor="Gray"
                                                VerticalOptions="Center" />
@@ -84,7 +84,7 @@
                             </CollectionView.ItemTemplate>
                         </CollectionView>
 
-                        <Button Text="?? Verificar Sa�de"
+                        <Button Text="🔍 Verificar Saúde"
                                 Command="{Binding LoadSystemHealthCommand}"
                                 BackgroundColor="{StaticResource Secondary}"
                                 TextColor="White"
@@ -106,14 +106,14 @@
                             </Grid.ColumnDefinitions>
                             
                             <Label Grid.Column="0"
-                                   Text="?? Templates de Infraestrutura"
+                                   Text="📋 Templates de Infraestrutura"
                                    FontSize="18"
                                    FontAttributes="Bold"
                                    TextColor="{StaticResource Primary}"
                                    VerticalOptions="Center" />
 
                             <Button Grid.Column="1"
-                                    Text="??"
+                                    Text="🔄"
                                     Command="{Binding LoadTemplatesCommand}"
                                     BackgroundColor="{StaticResource Secondary}"
                                     TextColor="White"
@@ -172,7 +172,7 @@
                                             </StackLayout>
 
                                             <Label Grid.Row="0" Grid.Column="2"
-                                                   Text="?"
+                                                   Text="⭐"
                                                    FontSize="16"
                                                    IsVisible="{Binding IsRecommended}"
                                                    VerticalOptions="Start" />
@@ -214,7 +214,7 @@
                        Padding="20"
                        HasShadow="True">
                     <StackLayout>
-                        <Label Text="?? APIs Dispon�veis"
+                        <Label Text="📱 APIs Disponíveis"
                                FontSize="18"
                                FontAttributes="Bold"
                                TextColor="{StaticResource Primary}" />
@@ -257,13 +257,13 @@
                                                 <Label Text="{Binding Description}"
                                                        FontSize="12"
                                                        TextColor="Gray" />
-                                                <Label Text="{Binding Type, StringFormat='Tipo: {0} | Vers�o: {1}', StringFormat2='{Binding Version}'}"
+                                                <Label Text="{Binding Type, StringFormat='Tipo: {0} | Versão: {1}', StringFormat2='{Binding Version}'}"
                                                        FontSize="10"
                                                        TextColor="Gray" />
                                             </StackLayout>
 
                                             <Label Grid.Column="2"
-                                                   Text="??"
+                                                   Text="➡️"
                                                    FontSize="16"
                                                    VerticalOptions="Center"
                                                    Opacity="0.6" />
@@ -277,7 +277,7 @@
 
                 <!-- Action Buttons -->
                 <StackLayout Orientation="Horizontal" HorizontalOptions="FillAndExpand">
-                    <Button Text="?? Atualizar"
+                    <Button Text="🔄 Atualizar"
                             Command="{Binding RefreshCommand}"
                             BackgroundColor="{StaticResource Secondary}"
                             TextColor="White"
@@ -285,7 +285,7 @@
                             HorizontalOptions="FillAndExpand"
                             Margin="0,0,10,0" />
 
-                    <Button Text="?? Configura��es"
+                    <Button Text="⚙️ Configurações"
                             BackgroundColor="{StaticResource Tertiary}"
                             TextColor="{StaticResource Primary}"
                             CornerRadius="8"

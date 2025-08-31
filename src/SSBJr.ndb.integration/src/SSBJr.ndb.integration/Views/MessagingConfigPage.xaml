@@ -4,7 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:SSBJr.ndb.integration.ViewModels"
              x:DataType="viewmodels:MessagingConfigViewModel"
-             Title="?? Configuração de Mensageria"
+             Title="ðŸ“¨ ConfiguraÃ§Ã£o de Mensageria"
              Shell.BackgroundColor="{StaticResource Primary}">
 
     <ScrollView>
@@ -16,7 +16,7 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="?? Configuração de Mensageria"
+                    <Label Text="ðŸ“¨ ConfiguraÃ§Ã£o de Mensageria"
                            FontSize="24"
                            FontAttributes="Bold"
                            TextColor="White"
@@ -35,19 +35,19 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="?? Tipo de Mensageria"
+                    <Label Text="ðŸ”§ Tipo de Mensageria"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
 
                     <!-- Recommended Services -->
-                    <Label Text="Serviços Modernos (Recomendados)"
+                    <Label Text="ServiÃ§os Modernos (Recomendados)"
                            FontSize="14"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Secondary}"
                            Margin="0,15,0,5" />
 
-                    <Button Text="?? Apache Kafka - Alto Throughput"
+                    <Button Text="ðŸš€ Apache Kafka - Alto Throughput"
                             Command="{Binding SelectMessagingTypeCommand}"
                             CommandParameter="Apache_Kafka"
                             BackgroundColor="#FF4081"
@@ -55,7 +55,7 @@
                             CornerRadius="8"
                             Margin="0,5" />
 
-                    <Button Text="? NATS - Simplicidade e Performance"
+                    <Button Text="âš¡ NATS - Simplicidade e Performance"
                             Command="{Binding SelectMessagingTypeCommand}"
                             CommandParameter="NATS"
                             BackgroundColor="#2196F3"
@@ -63,7 +63,7 @@
                             CornerRadius="8"
                             Margin="0,5" />
 
-                    <Button Text="?? Azure Service Bus - Enterprise Cloud"
+                    <Button Text="â˜ï¸ Azure Service Bus - Enterprise Cloud"
                             Command="{Binding SelectMessagingTypeCommand}"
                             CommandParameter="Azure_ServiceBus"
                             BackgroundColor="#0078D4"
@@ -72,13 +72,13 @@
                             Margin="0,5" />
 
                     <!-- Cloud Services -->
-                    <Label Text="Serviços Cloud"
+                    <Label Text="ServiÃ§os Cloud"
                            FontSize="14"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Secondary}"
                            Margin="0,15,0,5" />
 
-                    <Button Text="?? AWS SQS - Filas Simples"
+                    <Button Text="ðŸ“¬ AWS SQS - Filas Simples"
                             Command="{Binding SelectMessagingTypeCommand}"
                             CommandParameter="AWS_SQS"
                             BackgroundColor="#FF9900"
@@ -86,7 +86,7 @@
                             CornerRadius="8"
                             Margin="0,5" />
 
-                    <Button Text="?? AWS EventBridge - Event-Driven"
+                    <Button Text="ðŸ“¡ AWS EventBridge - Event-Driven"
                             Command="{Binding SelectMessagingTypeCommand}"
                             CommandParameter="AWS_EventBridge"
                             BackgroundColor="#FF9900"
@@ -94,7 +94,7 @@
                             CornerRadius="8"
                             Margin="0,5" />
 
-                    <Button Text="?? Google Pub/Sub - Serverless"
+                    <Button Text="ðŸ”„ Google Pub/Sub - Serverless"
                             Command="{Binding SelectMessagingTypeCommand}"
                             CommandParameter="Google_PubSub"
                             BackgroundColor="#4285F4"
@@ -103,13 +103,13 @@
                             Margin="0,5" />
 
                     <!-- Legacy -->
-                    <Label Text="?? Legado (Não Recomendado)"
+                    <Label Text="âš ï¸ Legado (NÃ£o Recomendado)"
                            FontSize="14"
                            FontAttributes="Bold"
                            TextColor="Red"
                            Margin="0,15,0,5" />
 
-                    <Button Text="?? RabbitMQ (Deprecated)"
+                    <Button Text="ðŸ° RabbitMQ (Deprecated)"
                             Command="{Binding SelectMessagingTypeCommand}"
                             CommandParameter="RabbitMQ"
                             BackgroundColor="Gray"
@@ -117,7 +117,7 @@
                             CornerRadius="8"
                             Margin="0,5" />
 
-                    <Button Text="?? Nenhuma Mensageria"
+                    <Button Text="âŒ Nenhuma Mensageria"
                             Command="{Binding SelectMessagingTypeCommand}"
                             CommandParameter="None"
                             BackgroundColor="{StaticResource Tertiary}"
@@ -134,7 +134,7 @@
                    HasShadow="True"
                    IsVisible="{Binding SelectedType, Converter={StaticResource NotEqualsConverter}, ConverterParameter='None'}">
                 <StackLayout>
-                    <Label Text="?? Configuração Atual"
+                    <Label Text="âš™ï¸ ConfiguraÃ§Ã£o Atual"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
@@ -162,112 +162,115 @@
                     </Frame>
 
                     <!-- Connection String -->
-                    <Label Text="?? String de Conexão"
+                    <Label Text="ðŸ”— String de ConexÃ£o"
                            FontSize="14"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
                     <Entry Text="{Binding ConnectionString}"
-                           Placeholder="Digite a string de conexão..."
+                           Placeholder="Digite a string de conexÃ£o..."
                            BackgroundColor="{StaticResource Tertiary}"
                            Margin="0,5,0,15" />
 
                     <!-- Advanced Configuration -->
-                    <Expander IsExpanded="False">
-                        <Expander.Header>
-                            <Label Text="?? Configurações Avançadas"
-                                   FontSize="14"
-                                   FontAttributes="Bold"
-                                   TextColor="{StaticResource Secondary}" />
-                        </Expander.Header>
-                        
-                        <StackLayout Padding="10,0,0,0">
-                            <!-- Batching Configuration -->
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                
-                                <Label Grid.Column="0"
-                                       Text="Habilitar Batching"
-                                       VerticalOptions="Center" />
-                                <Switch Grid.Column="1"
-                                        IsToggled="{Binding EnableBatching}" />
-                            </Grid>
+                    <Frame BackgroundColor="{StaticResource Tertiary}" CornerRadius="10" Padding="15" Margin="0,20,0,0">
+                        <StackLayout>
+                            <Button x:Name="AdvancedToggleButton"
+                                    Text="ðŸ”§ ConfiguraÃ§Ãµes AvanÃ§adas â–¼"
+                                    BackgroundColor="Transparent"
+                                    TextColor="{StaticResource Secondary}"
+                                    FontSize="14"
+                                    FontAttributes="Bold"
+                                    Clicked="OnAdvancedToggleClicked" />
+                            
+                            <StackLayout x:Name="AdvancedConfigPanel" IsVisible="False" Padding="10,0,0,0">
+                                <!-- Batching Configuration -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <Label Grid.Column="0"
+                                           Text="Habilitar Batching"
+                                           VerticalOptions="Center" />
+                                    <Switch Grid.Column="1"
+                                            IsToggled="{Binding EnableBatching}" />
+                                </Grid>
 
-                            <!-- Batch Size -->
-                            <StackLayout IsVisible="{Binding EnableBatching}">
-                                <Label Text="Tamanho do Batch" />
-                                <Slider Minimum="10" Maximum="1000" Value="{Binding BatchSize}" />
-                                <Label Text="{Binding BatchSize, StringFormat='Tamanho: {0:F0}'}"
+                                <!-- Batch Size -->
+                                <StackLayout IsVisible="{Binding EnableBatching}">
+                                    <Label Text="Tamanho do Batch" />
+                                    <Slider Minimum="10" Maximum="1000" Value="{Binding BatchSize}" />
+                                    <Label Text="{Binding BatchSize, StringFormat='Tamanho: {0:F0}'}"
+                                           FontSize="12"
+                                           TextColor="Gray" />
+                                </StackLayout>
+
+                                <!-- Partitioning (Kafka specific) -->
+                                <Grid IsVisible="{Binding IsKafka}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <Label Grid.Column="0"
+                                           Text="Habilitar Particionamento"
+                                           VerticalOptions="Center" />
+                                    <Switch Grid.Column="1"
+                                            IsToggled="{Binding EnablePartitioning}" />
+                                </Grid>
+
+                                <!-- Partition Count -->
+                                <StackLayout IsVisible="{Binding ShowPartitionConfig}">
+                                    <Label Text="NÃºmero de PartiÃ§Ãµes" />
+                                    <Slider Minimum="1" Maximum="20" Value="{Binding PartitionCount}" />
+                                    <Label Text="{Binding PartitionCount, StringFormat='PartiÃ§Ãµes: {0:F0}'}"
+                                           FontSize="12"
+                                           TextColor="Gray" />
+                                </StackLayout>
+
+                                <!-- Consumer Group -->
+                                <Label Text="Grupo de Consumidores" />
+                                <Entry Text="{Binding ConsumerGroup}"
+                                       Placeholder="default"
+                                       BackgroundColor="{StaticResource Tertiary}" />
+
+                                <!-- Dead Letter Queue -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <Label Grid.Column="0"
+                                           Text="Dead Letter Queue"
+                                           VerticalOptions="Center" />
+                                    <Switch Grid.Column="1"
+                                            IsToggled="{Binding EnableDeadLetterQueue}" />
+                                </Grid>
+
+                                <!-- Max Retries -->
+                                <Label Text="MÃ¡ximo de Tentativas" />
+                                <Slider Minimum="1" Maximum="10" Value="{Binding MaxRetries}" />
+                                <Label Text="{Binding MaxRetries, StringFormat='Tentativas: {0:F0}'}"
                                        FontSize="12"
                                        TextColor="Gray" />
                             </StackLayout>
-
-                            <!-- Partitioning (Kafka specific) -->
-                            <Grid IsVisible="{Binding IsKafka}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                
-                                <Label Grid.Column="0"
-                                       Text="Habilitar Particionamento"
-                                       VerticalOptions="Center" />
-                                <Switch Grid.Column="1"
-                                        IsToggled="{Binding EnablePartitioning}" />
-                            </Grid>
-
-                            <!-- Partition Count -->
-                            <StackLayout IsVisible="{Binding ShowPartitionConfig}">
-                                <Label Text="Número de Partições" />
-                                <Slider Minimum="1" Maximum="20" Value="{Binding PartitionCount}" />
-                                <Label Text="{Binding PartitionCount, StringFormat='Partições: {0:F0}'}"
-                                       FontSize="12"
-                                       TextColor="Gray" />
-                            </StackLayout>
-
-                            <!-- Consumer Group -->
-                            <Label Text="Grupo de Consumidores" />
-                            <Entry Text="{Binding ConsumerGroup}"
-                                   Placeholder="default"
-                                   BackgroundColor="{StaticResource Tertiary}" />
-
-                            <!-- Dead Letter Queue -->
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                
-                                <Label Grid.Column="0"
-                                       Text="Dead Letter Queue"
-                                       VerticalOptions="Center" />
-                                <Switch Grid.Column="1"
-                                        IsToggled="{Binding EnableDeadLetterQueue}" />
-                            </Grid>
-
-                            <!-- Max Retries -->
-                            <Label Text="Máximo de Tentativas" />
-                            <Slider Minimum="1" Maximum="10" Value="{Binding MaxRetries}" />
-                            <Label Text="{Binding MaxRetries, StringFormat='Tentativas: {0:F0}'}"
-                                   FontSize="12"
-                                   TextColor="Gray" />
                         </StackLayout>
-                    </Expander>
+                    </Frame>
 
                     <!-- Topics and Queues -->
-                    <Label Text="?? Tópicos/Filas"
+                    <Label Text="ðŸ“‹ TÃ³picos/Filas"
                            FontSize="14"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}"
                            Margin="0,20,0,5" />
 
                     <Entry x:Name="TopicEntry"
-                           Placeholder="Digite o nome do tópico/fila..."
+                           Placeholder="Digite o nome do tÃ³pico/fila..."
                            BackgroundColor="{StaticResource Tertiary}" />
 
-                    <Button Text="? Adicionar Tópico/Fila"
+                    <Button Text="âž• Adicionar TÃ³pico/Fila"
                             Command="{Binding AddTopicCommand}"
                             CommandParameter="{Binding Source={x:Reference TopicEntry}, Path=Text}"
                             BackgroundColor="{StaticResource Secondary}"
@@ -284,7 +287,7 @@
                                            Text="{Binding .}"
                                            VerticalOptions="Center" />
                                     <Button Grid.Column="1"
-                                            Text="?"
+                                            Text="âŒ"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:MessagingConfigViewModel}}, Path=RemoveTopicCommand}"
                                             CommandParameter="{Binding .}"
                                             BackgroundColor="Red"
@@ -306,17 +309,17 @@
                    HasShadow="True"
                    IsVisible="{Binding SelectedType, Converter={StaticResource NotEqualsConverter}, ConverterParameter='None'}">
                 <StackLayout>
-                    <Label Text="?? Testar Configuração"
+                    <Label Text="ðŸ§ª Testar ConfiguraÃ§Ã£o"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
 
-                    <Label Text="Teste a conexão antes de salvar"
+                    <Label Text="Teste a conexÃ£o antes de salvar"
                            FontSize="12"
                            TextColor="Gray"
                            Margin="0,0,0,15" />
 
-                    <Button Text="?? Testar Conexão"
+                    <Button Text="ðŸ” Testar ConexÃ£o"
                             Command="{Binding TestConnectionCommand}"
                             BackgroundColor="Orange"
                             TextColor="White"
@@ -350,14 +353,14 @@
 
             <!-- Action Buttons -->
             <StackLayout Orientation="Horizontal" Spacing="10">
-                <Button Text="?? Salvar"
+                <Button Text="ðŸ’¾ Salvar"
                         Command="{Binding SaveConfigCommand}"
                         BackgroundColor="Green"
                         TextColor="White"
                         CornerRadius="8"
                         HorizontalOptions="FillAndExpand" />
 
-                <Button Text="? Cancelar"
+                <Button Text="âŒ Cancelar"
                         Command="{Binding CancelCommand}"
                         BackgroundColor="Gray"
                         TextColor="White"

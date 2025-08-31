@@ -36,6 +36,7 @@ public class InfrastructureViewModel : BaseViewModel
 
     private bool _isLoading;
     private string _searchText = string.Empty;
+    private string _name = "Infrastructure";
     private InfrastructureTemplate? _selectedTemplate;
     private SystemHealth? _systemHealth;
     private ObservableCollection<InfrastructureTemplate> _templates = new();
@@ -72,6 +73,12 @@ public class InfrastructureViewModel : BaseViewModel
     {
         get => _searchText;
         set => SetProperty(ref _searchText, value);
+    }
+
+    public string Name
+    {
+        get => _name;
+        set => SetProperty(ref _name, value);
     }
 
     public InfrastructureTemplate? SelectedTemplate

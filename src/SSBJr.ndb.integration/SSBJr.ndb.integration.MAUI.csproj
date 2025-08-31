@@ -83,4 +83,9 @@
 	  </MauiXaml>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Include="src\SSBJr.ndb.integration.Blazor.Tests\SSBJr.ndb.integration.Blazor.Tests.csproj" />
+	  <None Include="src\SSBJr.ndb.integration.Blazor\SSBJr.ndb.integration.Blazor.csproj" />
+	</ItemGroup>
+
 </Project>

@@ -18,6 +18,7 @@ public class CacheConfigViewModel : BaseViewModel
     private int _defaultTTL = 3600;
     private bool _enableDistributed = true;
     private bool _isTesting;
+    private bool _isAdvancedVisible;
     private TestResult? _testResult;
     private ApiInterface? _currentApi;
 
@@ -96,6 +97,12 @@ public class CacheConfigViewModel : BaseViewModel
     }
 
     public bool IsNotTesting => !IsTesting;
+
+    public bool IsAdvancedVisible
+    {
+        get => _isAdvancedVisible;
+        set => SetProperty(ref _isAdvancedVisible, value);
+    }
 
     public TestResult? TestResult
     {

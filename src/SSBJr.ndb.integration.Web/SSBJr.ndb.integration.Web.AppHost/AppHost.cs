@@ -17,17 +17,6 @@ var apiService = builder.AddProject<Projects.SSBJr_ndb_integration_Web_ApiServic
     .WaitFor(cache)
     .WaitFor(postgres);
 
-// Frontend Blazor Principal
-var webFrontend = builder.AddProject<Projects.SSBJr_ndb_integration_Web>("webfrontend")
-    .WithExternalHttpEndpoints()
-    .WithHttpHealthCheck("/health")
-    .WithReference(cache)
-    .WithReference(postgres)
-    .WithReference(apiService)
-    .WaitFor(cache)
-    .WaitFor(postgres)
-    .WaitFor(apiService);
-
 // Frontend Blazor Standalone
 var blazorApp = builder.AddProject<Projects.SSBJr_ndb_integration_Blazor>("blazorapp")
     .WithHttpHealthCheck("/health")

@@ -4,7 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:SSBJr.ndb.integration.ViewModels"
              x:DataType="viewmodels:CacheConfigViewModel"
-             Title="? Configura��o de Cache"
+             Title="💾 Configuração de Cache"
              Shell.BackgroundColor="{StaticResource Primary}">
 
     <ScrollView>
@@ -16,7 +16,7 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="? Configura��o de Cache"
+                    <Label Text="💾 Configuração de Cache"
                            FontSize="24"
                            FontAttributes="Bold"
                            TextColor="White"
@@ -35,12 +35,12 @@
                    Padding="20"
                    HasShadow="True">
                 <StackLayout>
-                    <Label Text="?? Tipo de Cache"
+                    <Label Text="🔧 Tipo de Cache"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
 
-                    <Button Text="? Redis - Recomendado"
+                    <Button Text="⚡ Redis - Recomendado"
                             Command="{Binding SelectCacheTypeCommand}"
                             CommandParameter="Redis"
                             BackgroundColor="#DC382D"
@@ -48,7 +48,7 @@
                             CornerRadius="8"
                             Margin="0,10,0,5" />
 
-                    <Button Text="?? Memcached - Simples"
+                    <Button Text="🚀 Memcached - Simples"
                             Command="{Binding SelectCacheTypeCommand}"
                             CommandParameter="Memcached"
                             BackgroundColor="#FF6B35"
@@ -56,7 +56,7 @@
                             CornerRadius="8"
                             Margin="0,5" />
 
-                    <Button Text="?? InMemory - Local"
+                    <Button Text="💻 InMemory - Local"
                             Command="{Binding SelectCacheTypeCommand}"
                             CommandParameter="InMemory"
                             BackgroundColor="{StaticResource Secondary}"
@@ -64,7 +64,7 @@
                             CornerRadius="8"
                             Margin="0,5" />
 
-                    <Button Text="?? Sem Cache"
+                    <Button Text="❌ Sem Cache"
                             Command="{Binding SelectCacheTypeCommand}"
                             CommandParameter="None"
                             BackgroundColor="Gray"
@@ -81,7 +81,7 @@
                    HasShadow="True"
                    IsVisible="{Binding SelectedType, Converter={StaticResource NotEqualsConverter}, ConverterParameter='None'}">
                 <StackLayout>
-                    <Label Text="?? Configura��o Atual"
+                    <Label Text="⚙️ Configuração Atual"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
@@ -109,49 +109,52 @@
                     </Frame>
 
                     <!-- Connection String -->
-                    <Label Text="?? String de Conex�o"
+                    <Label Text="🔗 String de Conexão"
                            FontSize="14"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}"
                            IsVisible="{Binding RequiresConnectionString}" />
                     <Entry Text="{Binding ConnectionString}"
-                           Placeholder="Digite a string de conex�o..."
+                           Placeholder="Digite a string de conexão..."
                            BackgroundColor="{StaticResource Tertiary}"
                            Margin="0,5,0,15"
                            IsVisible="{Binding RequiresConnectionString}" />
 
                     <!-- Advanced Configuration -->
-                    <Expander IsExpanded="False">
-                        <Expander.Header>
-                            <Label Text="?? Configura��es Avan�adas"
-                                   FontSize="14"
-                                   FontAttributes="Bold"
-                                   TextColor="{StaticResource Secondary}" />
-                        </Expander.Header>
-                        
-                        <StackLayout Padding="10,0,0,0">
-                            <!-- TTL Configuration -->
-                            <Label Text="? TTL Padr�o (segundos)" />
-                            <Slider Minimum="60" Maximum="86400" Value="{Binding DefaultTTL}" />
-                            <Label Text="{Binding DefaultTTL, StringFormat='TTL: {0:F0} segundos ({1})', ConverterParameter={Binding TTLFormatted}}"
-                                   FontSize="12"
-                                   TextColor="Gray" />
+                    <Frame BackgroundColor="{StaticResource Tertiary}" CornerRadius="10" Padding="15" Margin="0,20,0,0">
+                        <StackLayout>
+                            <Button x:Name="AdvancedToggleButton"
+                                    Text="🔧 Configurações Avançadas ▼"
+                                    BackgroundColor="Transparent"
+                                    TextColor="{StaticResource Secondary}"
+                                    FontSize="14"
+                                    FontAttributes="Bold"
+                                    Clicked="OnAdvancedToggleClicked" />
+                            
+                            <StackLayout x:Name="AdvancedConfigPanel" IsVisible="False" Padding="10,0,0,0">
+                                <!-- TTL Configuration -->
+                                <Label Text="⏰ TTL Padrão (segundos)" />
+                                <Slider Minimum="60" Maximum="86400" Value="{Binding DefaultTTL}" />
+                                <Label Text="{Binding DefaultTTL, StringFormat='TTL: {0:F0} segundos'}"
+                                       FontSize="12"
+                                       TextColor="Gray" />
 
-                            <!-- Distributed Cache -->
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                
-                                <Label Grid.Column="0"
-                                       Text="Cache Distribu�do"
-                                       VerticalOptions="Center" />
-                                <Switch Grid.Column="1"
-                                        IsToggled="{Binding EnableDistributed}" />
-                            </Grid>
+                                <!-- Distributed Cache -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <Label Grid.Column="0"
+                                           Text="Cache Distribuído"
+                                           VerticalOptions="Center" />
+                                    <Switch Grid.Column="1"
+                                            IsToggled="{Binding EnableDistributed}" />
+                                </Grid>
+                            </StackLayout>
                         </StackLayout>
-                    </Expander>
+                    </Frame>
                 </StackLayout>
             </Frame>
 
@@ -162,17 +165,17 @@
                    HasShadow="True"
                    IsVisible="{Binding SelectedType, Converter={StaticResource NotEqualsConverter}, ConverterParameter='None'}">
                 <StackLayout>
-                    <Label Text="?? Testar Configura��o"
+                    <Label Text="🧪 Testar Configuração"
                            FontSize="18"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Primary}" />
 
-                    <Label Text="Teste a conex�o antes de salvar"
+                    <Label Text="Teste a conexão antes de salvar"
                            FontSize="12"
                            TextColor="Gray"
                            Margin="0,0,0,15" />
 
-                    <Button Text="?? Testar Conex�o"
+                    <Button Text="🔍 Testar Conexão"
                             Command="{Binding TestConnectionCommand}"
                             BackgroundColor="Orange"
                             TextColor="White"
@@ -206,14 +209,14 @@
 
             <!-- Action Buttons -->
             <StackLayout Orientation="Horizontal" Spacing="10">
-                <Button Text="?? Salvar"
+                <Button Text="💾 Salvar"
                         Command="{Binding SaveConfigCommand}"
                         BackgroundColor="Green"
                         TextColor="White"
                         CornerRadius="8"
                         HorizontalOptions="FillAndExpand" />
 
-                <Button Text="? Cancelar"
+                <Button Text="❌ Cancelar"
                         Command="{Binding CancelCommand}"
                         BackgroundColor="Gray"
                         TextColor="White"

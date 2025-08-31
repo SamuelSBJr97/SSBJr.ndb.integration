@@ -19,11 +19,13 @@ namespace SSBJr.ndb.integration
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
-            // Configure HTTP Client manually for API communication
+            // Configure HTTP Client with service discovery support
+            var apiBaseUrl = "https://localhost:8080/"; // Fallback for local development
+
             builder.Services.AddSingleton<HttpClient>(provider =>
             {
                 var httpClient = new HttpClient();
-                httpClient.BaseAddress = new Uri("https://localhost:8080/");
+                httpClient.BaseAddress = new Uri(apiBaseUrl);
                 httpClient.DefaultRequestHeaders.Add("User-Agent", "SSBJr.MAUI/1.0");
                 httpClient.Timeout = TimeSpan.FromSeconds(30);
                 return httpClient;

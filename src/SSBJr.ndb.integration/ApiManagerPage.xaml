@@ -32,7 +32,7 @@
                            Text="{Binding ApiName}" />
                     
                     <Entry x:Name="ApiDescriptionEntry" 
-                           Placeholder="Descricao da API"
+                           Placeholder="Descrição da API"
                            Text="{Binding ApiDescription}" />
                     
                     <Button x:Name="UploadFileBtn"
